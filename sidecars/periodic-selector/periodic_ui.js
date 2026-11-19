@@ -307,17 +307,17 @@
     return success;
   };
 
-  // 方案一升级版：三档滑动轨能级激发态 (Low - Medium - High)
+  // 方案一升级版：参考图片2布局与高质感胶囊滑轨 (Low - Medium - High)
   const TIERS = [
-    { key: 'low', name: 'Low', icon: '⚪', pct: 0, statusClass: 'tier-low' },
-    { key: 'medium', name: 'Medium', icon: '🟢', pct: 50, statusClass: 'tier-medium' },
-    { key: 'high', name: 'High', icon: '⚡', pct: 100, statusClass: 'tier-high' }
+    { key: 'low', name: 'Low', zh: '低', icon: '⚪', pct: 0, color: '#64748b', fillColor: '#64748b' },
+    { key: 'medium', name: 'Medium', zh: '中', icon: '🟢', pct: 50, color: '#0284c7', fillColor: '#0284c7' },
+    { key: 'high', name: 'High', zh: '高', icon: '⚡', pct: 100, color: '#2563eb', fillColor: '#2563eb' }
   ];
 
   let currentEffortModel = '';
   let currentTierIdx = 1;
 
-  // 创建激发态思考能级滑块气泡
+  // 创建激发态思考能级滑块气泡（大体参考图片2，保留Antigravity高科技亮色质感）
   function createEffortPopover() {
     let popover = document.getElementById('agy-effort-popover');
     if (popover) {
@@ -329,58 +329,58 @@
     popover.className = 'agy-effort-popover';
     popover.style.display = 'none';
     popover.innerHTML = `
-      <div class="agy-popover-header">
-        <div class="agy-popover-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          <span id="agy-effort-model-title">Gemini 3.8 Flash</span>
+      <!-- 顶栏：大体参考图片2（左闪电、中当前档位与模型名、右关闭） -->
+      <div class="agy-popover-top-row">
+        <div class="agy-popover-icon-col">
+          <svg class="agy-popover-bolt" id="agy-popover-bolt" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
+        <div class="agy-popover-center-col">
+          <div class="agy-popover-tier-title" id="agy-effort-tier-title">高</div>
+          <div class="agy-popover-model-sub">
+            <span id="agy-effort-model-title">Gemini 3.8 Flash</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
         </div>
         <button class="agy-popover-close" id="agy-effort-close" title="关闭">✕</button>
       </div>
 
-      <div class="agy-slider-main-row">
-        <!-- 左侧滑动区 -->
-        <div class="agy-slider-track-col">
-          <div class="agy-tier-track-wrapper" id="agy-tier-track-wrapper">
-            <div class="agy-tier-track-base" id="agy-tier-track-base">
-              <div class="agy-tier-track-fill" id="agy-tier-track-fill" style="width: 50%;"></div>
-              <div class="agy-tier-node node-0" data-tier="0" title="Low"><span class="node-tick"></span></div>
-              <div class="agy-tier-node node-1 is-active" data-tier="1" title="Medium"><span class="node-tick"></span></div>
-              <div class="agy-tier-node node-2" data-tier="2" title="High"><span class="node-tick"></span></div>
-              <div class="agy-tier-thumb" id="agy-tier-thumb" style="left: 50%;" tabindex="0" role="slider">
-                <div class="agy-thumb-core"></div>
-              </div>
-            </div>
-          </div>
-          <div class="agy-tier-ticks">
-            <span class="tick-label label-0" data-tier="0">Low</span>
-            <span class="tick-label label-1 is-active" data-tier="1">Medium</span>
-            <span class="tick-label label-2" data-tier="2">High</span>
-          </div>
+      <!-- 图片2 风格：一体化宽胶囊滑轨 (Pill Slider Bar) -->
+      <div class="agy-pill-slider-container">
+        <div class="agy-pill-track" id="agy-tier-track-base">
+          <div class="agy-pill-fill" id="agy-tier-track-fill"></div>
+          <!-- 档位刻度内嵌圆点 -->
+          <div class="agy-pill-dot dot-0" data-tier="0"></div>
+          <div class="agy-pill-dot dot-1" data-tier="1"></div>
+          <div class="agy-pill-dot dot-2" data-tier="2"></div>
+          <!-- 悬浮圆球 Thumb -->
+          <div class="agy-pill-thumb" id="agy-tier-thumb" tabindex="0" role="slider"></div>
         </div>
-
-        <!-- 右侧：当前等级指示 Badge -->
-        <div class="agy-current-level-badge tier-medium" id="agy-tier-badge">
-          <span class="badge-icon" id="agy-badge-icon">🟢</span>
-          <span class="badge-text" id="agy-badge-text">Medium</span>
+        <!-- 底部极简刻度标签 -->
+        <div class="agy-pill-ticks">
+          <span class="pill-tick-label label-0" data-tier="0">低</span>
+          <span class="pill-tick-label label-1" data-tier="1">中</span>
+          <span class="pill-tick-label label-2" data-tier="2">高</span>
         </div>
       </div>
     `;
     document.body.appendChild(popover);
 
-    // 绑定关闭按钮
+    // 绑定关闭按钮与内部防冒泡
     document.getElementById('agy-effort-close').onclick = (e) => {
       e.stopPropagation();
       hideEffortPopover();
     };
+    popover.onclick = (e) => {
+      e.stopPropagation();
+    };
 
-    // 滑块核心交互：拖拽与自动吸附匹配
     const thumb = document.getElementById('agy-tier-thumb');
     const trackBase = document.getElementById('agy-tier-track-base');
     const trackFill = document.getElementById('agy-tier-track-fill');
-    const trackWrapper = document.getElementById('agy-tier-track-wrapper');
-    const badge = document.getElementById('agy-tier-badge');
-    const badgeIcon = document.getElementById('agy-badge-icon');
-    const badgeText = document.getElementById('agy-badge-text');
+    const tierTitle = document.getElementById('agy-effort-tier-title');
+    const boltIcon = document.getElementById('agy-popover-bolt');
 
     let isDragging = false;
     let dragPointerId = null;
@@ -388,29 +388,36 @@
     function applyTierUI(idx) {
       currentTierIdx = idx;
       const tier = TIERS[idx];
-      thumb.style.left = `${tier.pct}%`;
-      trackFill.style.width = `${tier.pct}%`;
+      tierTitle.textContent = tier.zh;
+      tierTitle.style.color = tier.color;
+      boltIcon.style.color = tier.color;
+      trackFill.style.background = tier.fillColor;
 
-      badge.className = `agy-current-level-badge ${tier.statusClass}`;
-      badgeIcon.textContent = tier.icon;
-      badgeText.textContent = tier.name;
+      if (idx === 0) {
+        thumb.style.left = '14px';
+        trackFill.style.width = '28px';
+      } else if (idx === 1) {
+        thumb.style.left = '50%';
+        trackFill.style.width = '50%';
+      } else {
+        thumb.style.left = 'calc(100% - 14px)';
+        trackFill.style.width = '100%';
+      }
 
-      popover.querySelectorAll('.agy-tier-node').forEach((node) => {
-        const nIdx = parseInt(node.getAttribute('data-tier'), 10);
-        if (nIdx === idx) node.classList.add('is-active');
-        else node.classList.remove('is-active');
+      popover.querySelectorAll('.agy-pill-dot').forEach((dot) => {
+        const dIdx = parseInt(dot.getAttribute('data-tier'), 10);
+        dot.classList.toggle('is-active-fill', idx >= dIdx);
       });
 
-      popover.querySelectorAll('.tick-label').forEach((label) => {
+      popover.querySelectorAll('.pill-tick-label').forEach((label) => {
         const lIdx = parseInt(label.getAttribute('data-tier'), 10);
-        if (lIdx === idx) label.classList.add('is-active');
-        else label.classList.remove('is-active');
+        label.classList.toggle('is-active', idx === lIdx);
       });
     }
 
     function snapToTier(targetIdx, triggerChange = true) {
       thumb.style.transition = 'left 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)';
-      trackFill.style.transition = 'width 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      trackFill.style.transition = 'width 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease';
       applyTierUI(targetIdx);
 
       if (triggerChange && currentEffortModel) {
@@ -421,8 +428,8 @@
     }
     popover.__snapToTier = snapToTier;
 
-    // 点击刻度节点或标签，直接平滑吸附并切换
-    popover.querySelectorAll('.agy-tier-node, .tick-label').forEach((el) => {
+    // 点击刻度圆点或标签直接吸附
+    popover.querySelectorAll('.agy-pill-dot, .pill-tick-label').forEach((el) => {
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         const idx = parseInt(el.getAttribute('data-tier'), 10);
@@ -432,7 +439,6 @@
       });
     });
 
-    // 轨道拖拽与松开自动匹配下级档位
     function onPointerDown(e) {
       e.stopPropagation();
       isDragging = true;
@@ -441,7 +447,6 @@
         thumb.setPointerCapture(e.pointerId);
       } catch (_) {}
       thumb.classList.add('is-dragging');
-
       thumb.style.transition = 'none';
       trackFill.style.transition = 'none';
       handleMove(e);
@@ -450,26 +455,31 @@
     function handleMove(e) {
       if (!isDragging) return;
       const rect = trackBase.getBoundingClientRect();
-      const rawPct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      const rawX = e.clientX - rect.left - 14;
+      const available = rect.width - 28;
+      const rawPct = Math.max(0, Math.min(100, (rawX / available) * 100));
 
-      thumb.style.left = `${rawPct}%`;
-      trackFill.style.width = `${rawPct}%`;
+      thumb.style.left = `calc(14px + (100% - 28px) * ${rawPct / 100})`;
+      trackFill.style.width = `calc(14px + (100% - 28px) * ${rawPct / 100})`;
 
-      // 实时预显当前右侧等级指示
       let previewIdx = 0;
       if (rawPct >= 85) previewIdx = 2;
       else if (rawPct >= 38) previewIdx = 1;
       else previewIdx = 0;
 
       const pTier = TIERS[previewIdx];
-      badge.className = `agy-current-level-badge ${pTier.statusClass}`;
-      badgeIcon.textContent = pTier.icon;
-      badgeText.textContent = pTier.name;
+      tierTitle.textContent = pTier.zh;
+      tierTitle.style.color = pTier.color;
+      boltIcon.style.color = pTier.color;
+      trackFill.style.background = pTier.fillColor;
 
-      popover.querySelectorAll('.tick-label').forEach((label) => {
+      popover.querySelectorAll('.agy-pill-dot').forEach((dot) => {
+        const dIdx = parseInt(dot.getAttribute('data-tier'), 10);
+        dot.classList.toggle('is-active-fill', previewIdx >= dIdx);
+      });
+      popover.querySelectorAll('.pill-tick-label').forEach((label) => {
         const lIdx = parseInt(label.getAttribute('data-tier'), 10);
-        if (lIdx === previewIdx) label.classList.add('is-active');
-        else label.classList.remove('is-active');
+        label.classList.toggle('is-active', previewIdx === lIdx);
       });
     }
 
@@ -482,12 +492,14 @@
       } catch (_) {}
 
       const rect = trackBase.getBoundingClientRect();
-      const rawPct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      const rawX = e.clientX - rect.left - 14;
+      const available = rect.width - 28;
+      const rawPct = Math.max(0, Math.min(100, (rawX / available) * 100));
 
       // 松开自动匹配档位规则（未完全达标则自动回弹至下级档位）：
-      // 0% ~ 45% -> 匹配到 Low (0)
-      // 45% ~ 88% -> 匹配到 Medium (1)
-      // >= 88% -> 匹配到 High (2)
+      // 0% ~ 45% -> 匹配到 低 (0)
+      // 45% ~ 88% -> 匹配到 中 (1)
+      // >= 88% -> 匹配到 高 (2)
       let snapIdx = 0;
       if (rawPct >= 88) snapIdx = 2;
       else if (rawPct >= 45) snapIdx = 1;
@@ -501,12 +513,14 @@
     thumb.addEventListener('pointerup', onPointerUp);
     thumb.addEventListener('pointercancel', onPointerUp);
 
-    // 点击轨道空白处也可以直接吸附
-    trackWrapper.addEventListener('click', (e) => {
+    // 点击轨道空白处吸附
+    trackBase.addEventListener('click', (e) => {
       if (e.target === thumb || thumb.contains(e.target)) return;
       e.stopPropagation();
       const rect = trackBase.getBoundingClientRect();
-      const clickPct = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+      const rawX = e.clientX - rect.left - 14;
+      const available = rect.width - 28;
+      const clickPct = Math.max(0, Math.min(100, (rawX / available) * 100));
       let clickIdx = 0;
       if (clickPct >= 75) clickIdx = 2;
       else if (clickPct >= 25) clickIdx = 1;
@@ -523,14 +537,26 @@
     document.getElementById('agy-effort-model-title').textContent = modelName;
 
     const rect = anchorEl.getBoundingClientRect();
-    popover.style.left = `${rect.left + rect.width / 2}px`;
-    popover.style.top = `${rect.top - 14}px`;
+    const popWidth = 310;
+    let left = rect.left + rect.width / 2;
+    left = Math.max(popWidth / 2 + 16, Math.min(window.innerWidth - popWidth / 2 - 16, left));
+
+    let top = rect.top - 14;
+    let isBelow = false;
+    if (top < 130) {
+      top = rect.bottom + 14;
+      isBelow = true;
+    }
+
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
+    popover.classList.toggle('is-below', isBelow);
     popover.style.display = 'flex';
 
     const normCurrent = currentModelName.toLowerCase();
     let initialTierIdx = 1; // 默认 medium
-    if (normCurrent.includes('low')) initialTierIdx = 0;
-    else if (normCurrent.includes('high')) initialTierIdx = 2;
+    if (normCurrent.includes('low') || normCurrent.includes('低')) initialTierIdx = 0;
+    else if (normCurrent.includes('high') || normCurrent.includes('高')) initialTierIdx = 2;
     else initialTierIdx = 1;
 
     if (popover.__snapToTier) {
@@ -636,19 +662,21 @@
       #agy-periodic-modal-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(15, 23, 42, 0.45);
+        background: rgba(15, 23, 42, 0.48);
         backdrop-filter: blur(8px);
         z-index: 999999;
-        display: flex;
+        display: none !important;
         align-items: center;
         justify-content: center;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
       #agy-periodic-modal-overlay.active {
-        opacity: 1;
-        pointer-events: auto;
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
       }
       .agy-periodic-dialog {
         width: 96vw;
@@ -661,15 +689,15 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
         color: #0f172a;
-        transform: scale(0.92) translateY(24px);
+        transform: scale(0.95) translateY(16px);
         opacity: 0;
-        transition: transform 0.32s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.25s ease;
+        transition: transform 0.28s cubic-bezier(0.34, 1.45, 0.64, 1), opacity 0.22s ease;
       }
       #agy-periodic-modal-overlay.active .agy-periodic-dialog {
-        transform: scale(1) translateY(0);
-        opacity: 1;
+        transform: scale(1) translateY(0) !important;
+        opacity: 1 !important;
       }
 
       /* 顶栏 */
@@ -1007,28 +1035,28 @@
         color: #0f172a;
       }
 
-      /* 方案一升级版：紧凑三档滑动轨（右侧实时等级指示） */
+      /* 方案一升级版：参考图片2风格的胶囊滑轨能级选择器 */
       .agy-effort-popover {
         position: fixed;
         z-index: 1000005;
         background: #ffffff;
         border: 1.5px solid #0284c7;
-        border-radius: 14px;
-        padding: 10px 14px 12px 14px;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25), 0 0 25px rgba(14, 165, 233, 0.28);
+        border-radius: 18px;
+        padding: 14px 18px 14px 18px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.22), 0 0 25px rgba(14, 165, 233, 0.22);
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        width: 380px;
+        gap: 12px;
+        width: 320px;
         transform: translate(-50%, -100%);
         margin-top: -14px;
-        animation: agy-pop-in 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+        opacity: 1 !important;
+        animation: agy-pop-in 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         pointer-events: auto;
       }
-      @keyframes agy-pop-in {
-        0% { opacity: 0; transform: translate(-50%, -85%) scale(0.88); }
-        70% { opacity: 1; transform: translate(-50%, -102%) scale(1.03); }
-        100% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+      .agy-effort-popover.is-below {
+        transform: translate(-50%, 0);
+        margin-top: 14px;
       }
       .agy-effort-popover::after {
         content: "";
@@ -1042,30 +1070,70 @@
         border-right: 1.5px solid #0284c7;
         border-bottom: 1.5px solid #0284c7;
       }
-      .agy-popover-header {
+      .agy-effort-popover.is-below::after {
+        top: -7px;
+        bottom: auto;
+        border-right: none;
+        border-bottom: none;
+        border-left: 1.5px solid #0284c7;
+        border-top: 1.5px solid #0284c7;
+      }
+
+      /* 顶部信息行：大体参考图片2（左闪电、居中当前档位与模型名、右关闭） */
+      .agy-popover-top-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 6px;
+        position: relative;
       }
-      .agy-popover-title {
+      .agy-popover-icon-col {
+        width: 28px;
         display: flex;
         align-items: center;
-        gap: 6px;
-        font-size: 13.5px;
+        justify-content: flex-start;
+      }
+      .agy-popover-bolt {
+        color: #2563eb;
+        transition: color 0.2s ease;
+      }
+      .agy-popover-center-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+      }
+      .agy-popover-tier-title {
+        font-size: 22px;
         font-weight: 700;
-        color: #0f172a;
+        color: #2563eb;
+        line-height: 1.1;
+        transition: color 0.2s ease;
+        letter-spacing: -0.2px;
+      }
+      .agy-popover-model-sub {
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        line-height: 1;
       }
       .agy-popover-close {
+        width: 28px;
         background: none;
         border: none;
-        font-size: 14px;
+        font-size: 15px;
         cursor: pointer;
         color: #94a3b8;
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding: 4px;
+        border-radius: 6px;
         line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
         transition: all 0.15s;
       }
       .agy-popover-close:hover {
@@ -1073,188 +1141,101 @@
         background: #fee2e2;
       }
 
-      /* 滑动条主行：左侧轨道，右侧当前等级 Badge */
-      .agy-slider-main-row {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 6px 2px 2px 2px;
-      }
-      .agy-slider-track-col {
-        flex: 1;
+      /* 图片2 风格：一体化宽胶囊滑轨 (Pill Slider Bar) */
+      .agy-pill-slider-container {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
+        padding: 2px;
       }
-      .agy-tier-ticks {
+      .agy-pill-track {
+        position: relative;
+        width: 100%;
+        height: 28px;
+        background: #e5e7eb;
+        border-radius: 9999px;
+        cursor: pointer;
+        user-select: none;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+      }
+      .agy-pill-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        border-radius: 9999px;
+        background: #2563eb;
+        transition: width 0.26s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease;
+        pointer-events: none;
+      }
+      /* 内嵌圆点 */
+      .agy-pill-dot {
+        position: absolute;
+        top: 50%;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #9ca3af;
+        transform: translate(-50%, -50%);
+        transition: all 0.2s ease;
+        z-index: 2;
+        pointer-events: none;
+        opacity: 0.8;
+      }
+      .agy-pill-dot.dot-0 { left: 14px; }
+      .agy-pill-dot.dot-1 { left: 50%; }
+      .agy-pill-dot.dot-2 { left: calc(100% - 14px); }
+      .agy-pill-dot.is-active-fill {
+        background: #ffffff;
+        opacity: 0.95;
+        box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
+      }
+      /* 悬浮圆球 Thumb (图片2纯白浮雕圆钮) */
+      .agy-pill-thumb {
+        position: absolute;
+        top: 50%;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #ffffff;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.04);
+        cursor: grab;
+        z-index: 5;
+        transition: left 0.26s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.15s ease, box-shadow 0.2s ease;
+        outline: none;
+        touch-action: none;
+      }
+      .agy-pill-thumb:hover {
+        transform: translate(-50%, -50%) scale(1.08);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.32), 0 0 0 2px rgba(37, 99, 235, 0.2);
+      }
+      .agy-pill-thumb:active,
+      .agy-pill-thumb.is-dragging {
+        cursor: grabbing;
+        transform: translate(-50%, -50%) scale(1.12);
+        box-shadow: 0 5px 14px rgba(15, 23, 42, 0.38), 0 0 0 3px rgba(37, 99, 235, 0.3);
+      }
+      /* 底部刻度文字行 */
+      .agy-pill-ticks {
         display: flex;
         justify-content: space-between;
-        padding: 0 4px;
+        padding: 0 8px;
       }
-      .tick-label {
-        font-size: 11px;
+      .pill-tick-label {
+        font-size: 11.5px;
         font-weight: 600;
         color: #94a3b8;
         cursor: pointer;
         transition: all 0.15s ease;
         user-select: none;
       }
-      .tick-label:hover {
-        color: #0284c7;
+      .pill-tick-label:hover {
+        color: #2563eb;
       }
-      .tick-label.is-active {
-        color: #0284c7;
+      .pill-tick-label.is-active {
+        color: #2563eb;
         font-weight: 700;
-      }
-      .tick-label.label-0 { text-align: left; }
-      .tick-label.label-1 { text-align: center; }
-      .tick-label.label-2 { text-align: right; }
-
-      /* 右侧当前等级 Badge */
-      .agy-current-level-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        min-width: 95px;
-        height: 34px;
-        padding: 0 12px;
-        border-radius: 10px;
-        font-size: 13px;
-        font-weight: 700;
-        user-select: none;
-        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        border: 1.5px solid transparent;
-        flex-shrink: 0;
-      }
-      .agy-current-level-badge.tier-low {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-        color: #334155;
-      }
-      .agy-current-level-badge.tier-medium {
-        background: #ecfdf5;
-        border-color: #10b981;
-        color: #047857;
-        box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
-      }
-      .agy-current-level-badge.tier-high {
-        background: #fffbeb;
-        border-color: #f59e0b;
-        color: #b45309;
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
-      }
-      .agy-current-level-badge .badge-icon {
-        font-size: 14px;
-        line-height: 1;
-      }
-
-      /* 滑动轨道容器 */
-      .agy-tier-track-wrapper {
-        position: relative;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        padding: 0 12px;
-        user-select: none;
-        cursor: pointer;
-      }
-      .agy-tier-track-base {
-        position: relative;
-        width: 100%;
-        height: 7px;
-        background: #e2e8f0;
-        border-radius: 9999px;
-        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
-      }
-      .agy-tier-track-fill {
-        position: absolute;
-        top: 0;
-        left: 0;
-        height: 100%;
-        border-radius: 9999px;
-        background: linear-gradient(90deg, #94a3b8 0%, #10b981 50%, #f59e0b 100%);
-        transition: width 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-        pointer-events: none;
-      }
-      /* 吸附节点刻度 */
-      .agy-tier-node {
-        position: absolute;
-        top: 50%;
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        background: #ffffff;
-        border: 2px solid #cbd5e1;
-        transform: translate(-50%, -50%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        z-index: 2;
-        cursor: pointer;
-      }
-      .agy-tier-node.node-0 { left: 0%; }
-      .agy-tier-node.node-1 { left: 50%; }
-      .agy-tier-node.node-2 { left: 100%; }
-      .agy-tier-node .node-tick {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: #94a3b8;
-        transition: all 0.2s ease;
-      }
-      .agy-tier-node.is-active {
-        border-color: #0284c7;
-        box-shadow: 0 0 8px rgba(2, 132, 199, 0.45);
-      }
-      .agy-tier-node.is-active .node-tick {
-        background: #0284c7;
-        transform: scale(1.3);
-      }
-
-      /* 拖拽滑块 Thumb */
-      .agy-tier-thumb {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        background: #ffffff;
-        border: 2.5px solid #0284c7;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 2px 10px rgba(2, 132, 199, 0.45), 0 0 0 3px rgba(14, 165, 233, 0.18);
-        cursor: grab;
-        z-index: 5;
-        transition: left 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.15s ease, box-shadow 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        outline: none;
-        touch-action: none;
-      }
-      .agy-tier-thumb:hover {
-        transform: translate(-50%, -50%) scale(1.12);
-        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.55), 0 0 0 5px rgba(14, 165, 233, 0.25);
-      }
-      .agy-tier-thumb:active,
-      .agy-tier-thumb.is-dragging {
-        cursor: grabbing;
-        transform: translate(-50%, -50%) scale(1.18);
-        box-shadow: 0 6px 18px rgba(2, 132, 199, 0.65), 0 0 0 6px rgba(14, 165, 233, 0.35);
-      }
-      .agy-thumb-core {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: #0284c7;
-        transition: transform 0.15s ease;
-      }
-      .agy-tier-thumb:active .agy-thumb-core {
-        transform: scale(1.2);
-        background: #0369a1;
       }
 
       /* Toast 提示条 */
@@ -1288,11 +1269,15 @@
 
   // 更新触发按钮（以当前模型命名）
   function updateTriggerButton() {
-    let btn = document.getElementById('agy-custom-model-trigger');
     const footer = document.querySelector('.agy-composer-footer');
     if (!footer) return;
 
-    if (!btn) {
+    let btn = document.getElementById('agy-custom-model-trigger');
+
+    if (!btn || !footer.contains(btn)) {
+      if (btn && !footer.contains(btn)) {
+        btn.remove();
+      }
       btn = document.createElement('button');
       btn.id = 'agy-custom-model-trigger';
       btn.type = 'button';
@@ -1306,8 +1291,10 @@
       }
     }
 
-    // 始终确保绑定最新 openModal 处理函数
+    // 始终确保绑定最新 openModal 处理函数与事件拦截
     btn.onclick = openModal;
+    btn.onpointerdown = (e) => { e.stopPropagation(); };
+    btn.onmousedown = (e) => { e.stopPropagation(); };
 
     const displayName = currentModelName || '默认模型';
     let badge = '✦';
@@ -1534,8 +1521,8 @@
   // 打开模态框（纯净打开，绝不点击原生触发器）
   function openModal(e) {
     if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+      try { e.preventDefault(); } catch (_) {}
+      try { e.stopPropagation(); } catch (_) {}
     }
     let overlay = document.getElementById('agy-periodic-modal-overlay');
     if (!overlay) {
@@ -1544,14 +1531,33 @@
     }
     getCurrentActiveModel();
     renderAll();
-    if (window.__setOtherModelsExpanded) window.__setOtherModelsExpanded(false);
+
+    // 如果当前选中的模型属于“其他可用模型”（如 Gemini 3.8 Flash），默认展开其他模型栏方便用户调档
+    const isOtherCurrent = otherModelsList.some(m => {
+      const cur = currentModelName.toLowerCase();
+      const lab = m.label.toLowerCase();
+      return cur.includes(lab) || (lab.includes('flash') && cur.includes('flash'));
+    });
+    if (window.__setOtherModelsExpanded) {
+      window.__setOtherModelsExpanded(isOtherCurrent);
+    }
+
+    overlay.style.display = 'flex';
+    void overlay.offsetWidth;
     overlay.classList.add('active');
   }
 
   function closeModal() {
     hideEffortPopover();
     const overlay = document.getElementById('agy-periodic-modal-overlay');
-    if (overlay) overlay.classList.remove('active');
+    if (overlay) {
+      overlay.classList.remove('active');
+      setTimeout(() => {
+        if (!overlay.classList.contains('active')) {
+          overlay.style.display = 'none';
+        }
+      }, 240);
+    }
   }
 
   // 初始化
@@ -1568,7 +1574,9 @@
     if (window.__setOtherModelsExpanded) window.__setOtherModelsExpanded(false);
 
     const observer = new MutationObserver(() => {
-      if (!document.getElementById('agy-custom-model-trigger')) {
+      const footer = document.querySelector('.agy-composer-footer');
+      const btn = document.getElementById('agy-custom-model-trigger');
+      if (!btn || (footer && !footer.contains(btn))) {
         updateTriggerButton();
       } else {
         const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');

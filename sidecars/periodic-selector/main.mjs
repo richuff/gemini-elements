@@ -104,25 +104,53 @@ class ElementsDaemon {
       LOG('Connecting to Antigravity UI WebSocket:', wsUrl);
       const ws = new WebSocket(wsUrl);
       let closed = false;
+      let healthTimer = null;
 
-      ws.onopen = () => {
-        LOG('WebSocket connected. Injecting periodic_ui.js...');
+      const injectScript = () => {
         try {
           const uiCode = readFileSync(UI_SCRIPT_PATH, 'utf8');
           ws.send(JSON.stringify({
-            id: 1,
+            id: Date.now(),
             method: 'Runtime.evaluate',
-            params: {
-              expression: uiCode,
-              userGesture: true
-            }
+            params: { expression: uiCode, userGesture: true }
           }));
-
-          // 启用 Page 监听以在 reload 时再次注入
-          ws.send(JSON.stringify({ id: 2, method: 'Page.enable' }));
         } catch (e) {
           LOG('Failed to read or send UI script:', e.message);
         }
+      };
+
+      ws.onopen = () => {
+        LOG('WebSocket connected. Injecting periodic_ui.js...');
+        injectScript();
+
+        // 启用 Page 监听以在 reload 时再次注入
+        ws.send(JSON.stringify({ id: 2, method: 'Page.enable' }));
+
+        // 动态健康自愈：每 2 秒检测一次 SPA 路由切换与组件重挂载
+        healthTimer = setInterval(() => {
+          if (closed) {
+            clearInterval(healthTimer);
+            return;
+          }
+          try {
+            ws.send(JSON.stringify({
+              id: 9999,
+              method: 'Runtime.evaluate',
+              params: {
+                expression: `(() => {
+                  const footer = document.querySelector('.agy-composer-footer');
+                  const btn = document.getElementById('agy-custom-model-trigger');
+                  const overlay = document.getElementById('agy-periodic-modal-overlay');
+                  if (footer && (!btn || !footer.contains(btn) || !overlay)) {
+                    return 'reinject';
+                  }
+                  return 'ok';
+                })()`,
+                returnByValue: true
+              }
+            }));
+          } catch (_) {}
+        }, 2000);
       };
 
       ws.onmessage = (event) => {
@@ -131,25 +159,26 @@ class ElementsDaemon {
           if (msg.id === 1) {
             LOG('Injection evaluation completed:', msg.result?.result?.value || 'OK');
           }
+          if (msg.id === 9999 && msg.result?.result?.value === 'reinject') {
+            LOG('DOM changed or trigger missing in current conversation, re-injecting periodic_ui.js...');
+            injectScript();
+          }
           if (msg.method === 'Page.loadEventFired') {
             LOG('Page reloaded, re-injecting...');
-            const uiCode = readFileSync(UI_SCRIPT_PATH, 'utf8');
-            ws.send(JSON.stringify({
-              id: Date.now(),
-              method: 'Runtime.evaluate',
-              params: { expression: uiCode, userGesture: true }
-            }));
+            injectScript();
           }
         } catch (e) {}
       };
 
       ws.onerror = (e) => {
         LOG('WebSocket error:', e.message || 'error');
+        if (healthTimer) clearInterval(healthTimer);
         if (!closed) { closed = true; resolve(); }
       };
 
       ws.onclose = () => {
         LOG('WebSocket connection closed.');
+        if (healthTimer) clearInterval(healthTimer);
         if (!closed) { closed = true; resolve(); }
       };
     });
