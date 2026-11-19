@@ -39,6 +39,14 @@
 
 ---
 
+## 🔄 重启自动常驻与自愈机制
+
+1. **会话生命周期钩子 (`hooks.json`)**：基于 Antigravity 插件生命周期规范，在 `SessionStart` 事件触发时自动静默检测并唤醒 sidecar 守护进程。
+2. **单实例端口互斥锁 (Mutex on Port 58118)**：以 118 号元素 Og 命名互斥端口 `58118`，任何重复拉起均在 10ms 内感知已有实例并优雅退出，零资源浪费与进程冲突。
+3. **开机与重启持久化**：支持 Windows 开机启动项（`shell:startup`），守护进程在后台极低资源常驻（~18MB 内存，0% CPU），在 Antigravity 关闭、重启、升级时自动重连新 CDP 端口并重新注入 UI。
+
+---
+
 ## 🚀 架构与技术原理
 
 - **Sidecar 架构**：通过 `main.mjs` 读取 `%APPDATA%\Antigravity\DevToolsActivePort` 端口，以 WebSocket CDP 方式将 `periodic_ui.js` 注入到桌面端界面。

@@ -1,0 +1,10 @@
+{
+  "gemini-elements-daemon": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "powershell -WindowStyle Hidden -Command \"Start-Process node -ArgumentList '%USERPROFILE%\\.gemini\\config\\plugins\\gemini-elements\\sidecars\\periodic-selector\\main.mjs' -WindowStyle Hidden\""
+      }
+    ]
+  }
+}

@@ -11,6 +11,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import http from 'node:http';
+import net from 'node:net';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -60,6 +61,25 @@ function fetchJson(url) {
   });
 }
 
+// 单实例端口互斥锁（避免重复启动多个守护进程）
+function acquireSingleInstanceLock(port = 58118) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        LOG(`[Mutex] Another instance of Gemini Elements Sidecar is already running on port ${port}. Exiting.`);
+        process.exit(0);
+      }
+      resolve(false);
+    });
+    server.once('listening', () => {
+      LOG(`[Mutex] Acquired single-instance lock on port ${port}.`);
+      resolve(server);
+    });
+    server.listen(port, '127.0.0.1');
+  });
+}
+
 class ElementsDaemon {
   constructor() {
     this.ws = null;
@@ -69,6 +89,7 @@ class ElementsDaemon {
   }
 
   async start() {
+    await acquireSingleInstanceLock(58118);
     LOG('Starting Gemini Elements Periodic Table Sidecar Daemon...');
     this.loop();
   }
@@ -84,7 +105,11 @@ class ElementsDaemon {
         }
 
         const targets = await fetchJson(`http://127.0.0.1:${port}/json/list`);
-        const mainTarget = targets.find(t => t.type === 'page' && t.title && t.title.includes('Antigravity'));
+        const mainTarget = targets.find(t => 
+          t.type === 'page' && 
+          !t.url?.startsWith('data:') && 
+          (t.url?.includes('127.0.0.1') || (t.title && (t.title.includes('Antigravity') || t.title.includes('Gemini'))))
+        );
 
         if (!mainTarget || !mainTarget.webSocketDebuggerUrl) {
           await new Promise(r => setTimeout(r, 2000));

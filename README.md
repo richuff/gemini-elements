@@ -39,6 +39,14 @@
 
 ---
 
+## 🔄 Persistence & Auto-Recovery Across Restarts
+
+1. **Session Lifecycle Hook (`hooks.json`)**: Configured with Antigravity's `SessionStart` event to automatically ensure the daemon is running whenever a conversation starts.
+2. **Single-Instance Mutex (Port 58118)**: Named after Element 118 (Og), uses local loopback port `58118` to atomically guarantee only one daemon instance runs at any time without duplicate injections.
+3. **Startup & Restart Persistence**: Background daemon runs lightweight in Windows (~18MB RAM, 0% CPU), automatically detecting new CDP debug ports and reconnecting across app restarts.
+
+---
+
 ## 📁 Repository Structure
 
 ```
