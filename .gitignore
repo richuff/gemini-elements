@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+.DS_Store
+Thumbs.db
+
+# Environment & Credentials
+.env
+.env.*
+*.token
+
+# Logs & Temporary files
+*.log
+*.tmp
+.system_generated/
+scratch/

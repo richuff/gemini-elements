@@ -1,0 +1,7 @@
+{
+  "command": "node",
+  "args": ["main.mjs"],
+  "restart_policy": "always",
+  "display_name": "Gemini Elements Selector",
+  "description": "在 Antigravity 界面注入化学元素周期表模型选择器"
+}
