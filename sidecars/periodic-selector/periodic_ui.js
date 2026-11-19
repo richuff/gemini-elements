@@ -1820,14 +1820,9 @@
     getCurrentActiveModel();
     renderAll();
 
-    // 如果当前选中的模型属于“其他可用模型”（如 Gemini 3.8 Flash），默认展开其他模型栏方便用户调档
-    const isOtherCurrent = otherModelsList.some(m => {
-      const cur = currentModelName.toLowerCase();
-      const lab = m.label.toLowerCase();
-      return cur.includes(lab) || (lab.includes('flash') && cur.includes('flash'));
-    });
+    // 其他可用模型默认始终保持折叠收起状态，点击标题栏时才展开
     if (window.__setOtherModelsExpanded) {
-      window.__setOtherModelsExpanded(isOtherCurrent);
+      window.__setOtherModelsExpanded(false);
     }
 
     overlay.style.display = 'flex';
