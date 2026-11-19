@@ -74,7 +74,7 @@
     { z: 40, s: 'Zr', zh: '锆', en: 'Zirconium', p: 5, g: 4, cat: 'transition' },
     { z: 41, s: 'Nb', zh: '铌', en: 'Niobium', p: 5, g: 5, cat: 'transition' },
     { z: 42, s: 'Mo', zh: '钼', en: 'Molybdenum', p: 5, g: 6, cat: 'transition' },
-    { z: 43, s: 'Tc', zh: '锝', en: 'Technetium', p: 5, g: 7, cat: 'transition' },
+    { z: 43, s: 'Tc', zh: '锝', en: 'Technetium', p: 5, g: 7, cat: 'transition', radioactive: true },
     { z: 44, s: 'Ru', zh: '钌', en: 'Ruthenium', p: 5, g: 8, cat: 'transition' },
     { z: 45, s: 'Rh', zh: '铑', en: 'Rhodium', p: 5, g: 9, cat: 'transition' },
     { z: 46, s: 'Pd', zh: '钯', en: 'Palladium', p: 5, g: 10, cat: 'transition' },
@@ -90,7 +90,7 @@
     // 周期 6
     { z: 55, s: 'Cs', zh: '铯', en: 'Caesium', p: 6, g: 1, cat: 'alkali' },
     { z: 56, s: 'Ba', zh: '钡', en: 'Barium', p: 6, g: 2, cat: 'alkaline' },
-    { z: 57, s: 'La*', zh: '镧系', en: 'Lanthanides', p: 6, g: 3, cat: 'lanthanide' },
+    { z: '57-71', s: 'La*', zh: '镧系', en: 'Lanthanides', p: 6, g: 3, cat: 'lanthanide', isSeriesPlaceholder: true, seriesType: 'lanthanide' },
     { z: 72, s: 'Hf', zh: '铪', en: 'Hafnium', p: 6, g: 4, cat: 'transition' },
     { z: 73, s: 'Ta', zh: '钽', en: 'Tantalum', p: 6, g: 5, cat: 'transition' },
     { z: 74, s: 'W', zh: '钨', en: 'Tungsten', p: 6, g: 6, cat: 'transition' },
@@ -103,29 +103,74 @@
     { z: 81, s: 'Tl', zh: '铊', en: 'Thallium', p: 6, g: 13, cat: 'post-transition' },
     { z: 82, s: 'Pb', zh: '铅', en: 'Lead', p: 6, g: 14, cat: 'post-transition' },
     { z: 83, s: 'Bi', zh: '铋', en: 'Bismuth', p: 6, g: 15, cat: 'post-transition' },
-    { z: 84, s: 'Po', zh: '钋', en: 'Polonium', p: 6, g: 16, cat: 'post-transition' },
-    { z: 85, s: 'At', zh: '砹', en: 'Astatine', p: 6, g: 17, cat: 'halogen' },
-    { z: 86, s: 'Rn', zh: '氡', en: 'Radon', p: 6, g: 18, cat: 'noble' },
+    { z: 84, s: 'Po', zh: '钋', en: 'Polonium', p: 6, g: 16, cat: 'post-transition', radioactive: true },
+    { z: 85, s: 'At', zh: '砹', en: 'Astatine', p: 6, g: 17, cat: 'halogen', radioactive: true },
+    { z: 86, s: 'Rn', zh: '氡', en: 'Radon', p: 6, g: 18, cat: 'noble', radioactive: true },
 
     // 周期 7
-    { z: 87, s: 'Fr', zh: '钫', en: 'Francium', p: 7, g: 1, cat: 'alkali' },
-    { z: 88, s: 'Ra', zh: '镭', en: 'Radium', p: 7, g: 2, cat: 'alkaline' },
-    { z: 89, s: 'Ac*', zh: '锕系', en: 'Actinides', p: 7, g: 3, cat: 'actinide' },
-    { z: 104, s: 'Rf', zh: '𬬻', en: 'Rutherfordium', p: 7, g: 4, cat: 'transition' },
-    { z: 105, s: 'Db', zh: '𬭊', en: 'Dubnium', p: 7, g: 5, cat: 'transition' },
-    { z: 106, s: 'Sg', zh: '𬭳', en: 'Seaborgium', p: 7, g: 6, cat: 'transition' },
-    { z: 107, s: 'Bh', zh: '𬭛', en: 'Bohrium', p: 7, g: 7, cat: 'transition' },
-    { z: 108, s: 'Hs', zh: '𬭶', en: 'Hassium', p: 7, g: 8, cat: 'transition' },
-    { z: 109, s: 'Mt', zh: '𬭵', en: 'Meitnerium', p: 7, g: 9, cat: 'transition' },
-    { z: 110, s: 'Ds', zh: '𬭝', en: 'Darmstadtium', p: 7, g: 10, cat: 'transition' },
-    { z: 111, s: 'Rg', zh: '𬭑', en: 'Roentgenium', p: 7, g: 11, cat: 'transition' },
-    { z: 112, s: 'Cn', zh: '鎶', en: 'Copernicium', p: 7, g: 12, cat: 'transition' },
-    { z: 113, s: 'Nh', zh: '鉨', en: 'Nihonium', p: 7, g: 13, cat: 'post-transition' },
-    { z: 114, s: 'Fl', zh: '鈇', en: 'Flerovium', p: 7, g: 14, cat: 'post-transition' },
-    { z: 115, s: 'Mc', zh: '镆', en: 'Moscovium', p: 7, g: 15, cat: 'post-transition' },
-    { z: 116, s: 'Lv', zh: '𫟷', en: 'Livermorium', p: 7, g: 16, cat: 'post-transition' },
-    { z: 117, s: 'Ts', zh: '鿬', en: 'Tennessine', p: 7, g: 17, cat: 'halogen' },
-    { z: 118, s: 'Og', zh: '鿫', en: 'Oganesson', p: 7, g: 18, cat: 'noble' }
+    { z: 87, s: 'Fr', zh: '钫', en: 'Francium', p: 7, g: 1, cat: 'alkali', radioactive: true },
+    { z: 88, s: 'Ra', zh: '镭', en: 'Radium', p: 7, g: 2, cat: 'alkaline', radioactive: true },
+    { z: '89-103', s: 'Ac*', zh: '锕系', en: 'Actinides', p: 7, g: 3, cat: 'actinide', isSeriesPlaceholder: true, seriesType: 'actinide', radioactive: true },
+    { z: 104, s: 'Rf', zh: '𬬻', en: 'Rutherfordium', p: 7, g: 4, cat: 'transition', radioactive: true },
+    { z: 105, s: 'Db', zh: '𬭊', en: 'Dubnium', p: 7, g: 5, cat: 'transition', radioactive: true },
+    { z: 106, s: 'Sg', zh: '𬭳', en: 'Seaborgium', p: 7, g: 6, cat: 'transition', radioactive: true },
+    { z: 107, s: 'Bh', zh: '𬭛', en: 'Bohrium', p: 7, g: 7, cat: 'transition', radioactive: true },
+    { z: 108, s: 'Hs', zh: '𬭶', en: 'Hassium', p: 7, g: 8, cat: 'transition', radioactive: true },
+    { z: 109, s: 'Mt', zh: '𬭵', en: 'Meitnerium', p: 7, g: 9, cat: 'transition', radioactive: true },
+    { z: 110, s: 'Ds', zh: '𬭝', en: 'Darmstadtium', p: 7, g: 10, cat: 'transition', radioactive: true },
+    { z: 111, s: 'Rg', zh: '𬭑', en: 'Roentgenium', p: 7, g: 11, cat: 'transition', radioactive: true },
+    { z: 112, s: 'Cn', zh: '鎶', en: 'Copernicium', p: 7, g: 12, cat: 'transition', radioactive: true },
+    { z: 113, s: 'Nh', zh: '鉨', en: 'Nihonium', p: 7, g: 13, cat: 'post-transition', radioactive: true },
+    { z: 114, s: 'Fl', zh: '鈇', en: 'Flerovium', p: 7, g: 14, cat: 'post-transition', radioactive: true },
+    { z: 115, s: 'Mc', zh: '镆', en: 'Moscovium', p: 7, g: 15, cat: 'post-transition', radioactive: true },
+    { z: 116, s: 'Lv', zh: '𫟷', en: 'Livermorium', p: 7, g: 16, cat: 'post-transition', radioactive: true },
+    { z: 117, s: 'Ts', zh: '鿬', en: 'Tennessine', p: 7, g: 17, cat: 'halogen', radioactive: true },
+    { z: 118, s: 'Og', zh: '鿫', en: 'Oganesson', p: 7, g: 18, cat: 'noble', radioactive: true }
+  ];
+
+  // 镧系元素族 (57 La ~ 71 Lu，15 元素)
+  const LANTHANIDES = [
+    { z: 57, s: 'La', zh: '镧', en: 'Lanthanum', cat: 'lanthanide' },
+    { z: 58, s: 'Ce', zh: '铈', en: 'Cerium', cat: 'lanthanide' },
+    { z: 59, s: 'Pr', zh: '镨', en: 'Praseodymium', cat: 'lanthanide' },
+    { z: 60, s: 'Nd', zh: '钕', en: 'Neodymium', cat: 'lanthanide' },
+    { z: 61, s: 'Pm', zh: '钷', en: 'Promethium', cat: 'lanthanide', radioactive: true },
+    { z: 62, s: 'Sm', zh: '钐', en: 'Samarium', cat: 'lanthanide' },
+    { z: 63, s: 'Eu', zh: '铕', en: 'Europium', cat: 'lanthanide' },
+    { z: 64, s: 'Gd', zh: '钆', en: 'Gadolinium', cat: 'lanthanide' },
+    { z: 65, s: 'Tb', zh: '铽', en: 'Terbium', cat: 'lanthanide' },
+    { z: 66, s: 'Dy', zh: '镝', en: 'Dysprosium', cat: 'lanthanide' },
+    { z: 67, s: 'Ho', zh: '钬', en: 'Holmium', cat: 'lanthanide' },
+    { z: 68, s: 'Er', zh: '铒', en: 'Erbium', cat: 'lanthanide' },
+    { z: 69, s: 'Tm', zh: '铥', en: 'Thulium', cat: 'lanthanide' },
+    { z: 70, s: 'Yb', zh: '镱', en: 'Ytterbium', cat: 'lanthanide' },
+    { z: 71, s: 'Lu', zh: '镥', en: 'Lutetium', cat: 'lanthanide' }
+  ];
+
+  // 锕系元素族 (89 Ac ~ 103 Lr，全 15 个均为放射性元素核素)
+  const ACTINIDES = [
+    { z: 89, s: 'Ac', zh: '锕', en: 'Actinium', cat: 'actinide', radioactive: true },
+    { z: 90, s: 'Th', zh: '钍', en: 'Thorium', cat: 'actinide', radioactive: true },
+    { z: 91, s: 'Pa', zh: '镤', en: 'Protactinium', cat: 'actinide', radioactive: true },
+    { z: 92, s: 'U', zh: '铀', en: 'Uranium', cat: 'actinide', radioactive: true },
+    { z: 93, s: 'Np', zh: '镎', en: 'Neptunium', cat: 'actinide', radioactive: true },
+    { z: 94, s: 'Pu', zh: '钚', en: 'Plutonium', cat: 'actinide', radioactive: true },
+    { z: 95, s: 'Am', zh: '镅', en: 'Americium', cat: 'actinide', radioactive: true },
+    { z: 96, s: 'Cm', zh: '锔', en: 'Curium', cat: 'actinide', radioactive: true },
+    { z: 97, s: 'Bk', zh: '锫', en: 'Berkelium', cat: 'actinide', radioactive: true },
+    { z: 98, s: 'Cf', zh: '锎', en: 'Californium', cat: 'actinide', radioactive: true },
+    { z: 99, s: 'Es', zh: '锿', en: 'Einsteinium', cat: 'actinide', radioactive: true },
+    { z: 100, s: 'Fm', zh: '镄', en: 'Fermium', cat: 'actinide', radioactive: true },
+    { z: 101, s: 'Md', zh: '钔', en: 'Mendelevium', cat: 'actinide', radioactive: true },
+    { z: 102, s: 'No', zh: '锘', en: 'Nobelium', cat: 'actinide', radioactive: true },
+    { z: 103, s: 'Lr', zh: '铹', en: 'Lawrencium', cat: 'actinide', radioactive: true }
+  ];
+
+  // 全 118 元素实体集合（剔除占位格后包含镧系与锕系全量个体）
+  const ALL_ELEMENTS = [
+    ...PERIODIC_TABLE.filter(e => !e.isSeriesPlaceholder),
+    ...LANTHANIDES,
+    ...ACTINIDES
   ];
 
   // 接口中确切存在的 8 个真实模型定义（零虚构）
@@ -164,8 +209,8 @@
         other.push(m);
         return;
       }
-      // 按英文全称精确匹配到周期表元素
-      const elem = PERIODIC_TABLE.find(e => e.en.toLowerCase() === m.elemEn.toLowerCase() || e.zh === m.elemZh);
+      // 按英文全称精确匹配到周期表元素（含镧系与锕系全 118 元素）
+      const elem = ALL_ELEMENTS.find(e => e.en.toLowerCase() === m.elemEn.toLowerCase() || e.zh === m.elemZh);
       if (elem) {
         matchedElementsMap.set(elem.z, m);
       } else {
@@ -786,11 +831,171 @@
         box-shadow: none;
         pointer-events: none;
       }
+      .agy-elem-cell .z-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        line-height: 1;
+      }
       .agy-elem-cell .z-num {
-        font-size: 10.5px;
+        font-size: 9.5px;
         color: #94a3b8;
         font-family: monospace;
         line-height: 1;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .agy-elem-cell.is-radioactive {
+        border-color: #fef08a;
+      }
+      .agy-elem-cell.is-radioactive:hover {
+        border-color: #f59e0b;
+        box-shadow: 0 8px 18px rgba(245, 158, 11, 0.16);
+      }
+      .agy-elem-cell .radioactive-icon {
+        font-size: 11px;
+        color: #d97706;
+        line-height: 1;
+        font-weight: 800;
+        text-shadow: 0 0 4px rgba(245, 158, 11, 0.45);
+        display: inline-block;
+      }
+      .agy-elem-cell[data-cat="lanthanide"] {
+        border-color: #f3e8ff;
+        background: #faf5ff;
+      }
+      .agy-elem-cell[data-cat="lanthanide"]:hover {
+        border-color: #c084fc;
+      }
+      .agy-elem-cell[data-cat="actinide"] {
+        border-color: #fef3c7;
+        background: #fffbeb;
+      }
+      .agy-elem-cell[data-cat="actinide"]:hover {
+        border-color: #f59e0b;
+      }
+
+      /* 周期表主表占位格 */
+      .agy-elem-cell.is-series-placeholder {
+        cursor: pointer;
+        background: #f8fafc;
+        border: 1.5px dashed #94a3b8;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .agy-elem-cell.is-series-placeholder:hover {
+        transform: translateY(-3px) scale(1.06);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        z-index: 5;
+      }
+      .agy-elem-cell.is-series-placeholder.series-lanthanide {
+        border-color: #a855f7;
+        background: #faf5ff;
+      }
+      .agy-elem-cell.is-series-placeholder.series-lanthanide .symbol {
+        color: #7e22ce;
+      }
+      .agy-elem-cell.is-series-placeholder.series-actinide {
+        border-color: #f59e0b;
+        background: #fffbeb;
+      }
+      .agy-elem-cell.is-series-placeholder.series-actinide .symbol {
+        color: #b45309;
+      }
+      .agy-elem-cell.is-series-placeholder .series-z {
+        font-size: 8.5px;
+        font-weight: 700;
+      }
+      .agy-elem-cell.is-series-placeholder .series-sym {
+        font-size: 16px;
+        font-weight: 800;
+      }
+      .agy-elem-cell.is-series-placeholder .series-zh {
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      /* 镧系与锕系专属展区 (f 区元素) */
+      .agy-fblock-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 2px;
+        padding-top: 8px;
+        border-top: 1px dashed #cbd5e1;
+      }
+      .agy-fblock-grid {
+        display: grid;
+        grid-template-columns: repeat(18, minmax(0, 1fr));
+        gap: 5px;
+        width: 100%;
+      }
+      .agy-fblock-label {
+        grid-column: span 3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 7px;
+        box-sizing: border-box;
+        user-select: none;
+        transition: all 0.25s ease;
+      }
+      .agy-fblock-label.lanthanide-label {
+        border-left: 4px solid #a855f7;
+        background: linear-gradient(90deg, #faf5ff 0%, #ffffff 100%);
+      }
+      .agy-fblock-label.actinide-label {
+        border-left: 4px solid #f59e0b;
+        background: linear-gradient(90deg, #fffbeb 0%, #ffffff 100%);
+      }
+      .agy-fblock-label .fblock-title-box {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .agy-fblock-label .fblock-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .agy-fblock-label.lanthanide-label .fblock-title {
+        color: #7e22ce;
+      }
+      .agy-fblock-label.actinide-label .fblock-title {
+        color: #b45309;
+      }
+      .agy-fblock-label .radioactive-tag {
+        font-size: 11.5px;
+        color: #f59e0b;
+        text-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+      }
+      .agy-fblock-label .fblock-sub {
+        font-size: 9.5px;
+        color: #64748b;
+        font-family: monospace;
+      }
+      .agy-fblock-label .fblock-count {
+        font-size: 10px;
+        color: #94a3b8;
+        background: rgba(148, 163, 184, 0.12);
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      @keyframes pulse-highlight-anim {
+        0% { transform: scale(1); box-shadow: 0 0 0 rgba(245, 158, 11, 0); }
+        50% { transform: scale(1.02); box-shadow: 0 0 16px rgba(245, 158, 11, 0.5); border-color: #f59e0b; }
+        100% { transform: scale(1); box-shadow: 0 0 0 rgba(245, 158, 11, 0); }
+      }
+      .pulse-highlight {
+        animation: pulse-highlight-anim 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
       .agy-elem-cell .symbol {
         font-size: 20.5px;
@@ -1299,7 +1504,7 @@
     const displayName = currentModelName || '默认模型';
     let badge = '✦';
     const l = displayName.toLowerCase();
-    for (const elem of PERIODIC_TABLE) {
+    for (const elem of ALL_ELEMENTS) {
       if (l.includes(elem.en.toLowerCase()) || displayName.includes(elem.zh)) {
         badge = elem.s;
         break;
@@ -1334,14 +1539,19 @@
               <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(-30 12 12)"/>
             </svg>
             <h3>模型选择矩阵</h3>
-            <span>Gemini 4 元素模型全称匹配 · 开放模型发光可选 · 底部收纳其他模型</span>
+            <span>118 化学元素全周期与镧系·锕系放射性元素族 · 开放模型发光可选</span>
           </div>
           <button class="agy-p-close" id="agy-p-close" title="关闭 (Esc)">✕</button>
         </div>
 
         <!-- 周期表网格主体 -->
-        <div class="agy-p-body">
+        <div class="agy-p-body" id="agy-p-body">
           <div class="agy-periodic-grid" id="agy-p-grid"></div>
+
+          <!-- 镧系与锕系放射性元素专属展区 (f 区元素) -->
+          <div class="agy-fblock-container" id="agy-fblock-container">
+            <div class="agy-fblock-grid" id="agy-fblock-grid"></div>
+          </div>
 
           <!-- 最下方：其他模型区域（默认折叠） -->
           <div class="agy-other-models-section" id="agy-other-section">
@@ -1419,65 +1629,143 @@
 
     const normCurrent = currentModelName.toLowerCase();
 
-    // 渲染 118 周期表
+    // 元素格子构建辅助函数（统一处理主表与镧锕系格子）
+    function createElemCell(elem) {
+      const cell = document.createElement('div');
+      if (!elem) {
+        cell.className = 'agy-elem-cell empty';
+        return cell;
+      }
+
+      cell.className = 'agy-elem-cell';
+      if (elem.cat) cell.setAttribute('data-cat', elem.cat);
+
+      if (elem.isSeriesPlaceholder) {
+        cell.classList.add('is-series-placeholder', `series-${elem.seriesType}`);
+        const isActinide = elem.seriesType === 'actinide';
+        cell.title = isActinide 
+          ? '锕系元素族 (89-103) · 全放射性元素核素 · 点击定位到下方锕系展区' 
+          : '镧系元素族 (57-71) · 点击定位到下方镧系展区';
+
+        cell.onclick = (e) => {
+          e.stopPropagation();
+          const fblock = document.getElementById('agy-fblock-container');
+          if (fblock) {
+            fblock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            const targetClass = isActinide ? '.actinide-label' : '.lanthanide-label';
+            const labelEl = fblock.querySelector(targetClass);
+            if (labelEl) {
+              labelEl.classList.remove('pulse-highlight');
+              void labelEl.offsetWidth;
+              labelEl.classList.add('pulse-highlight');
+            }
+          }
+        };
+
+        cell.innerHTML = `
+          <div class="z-row">
+            <span class="z-num series-z">${elem.z}${elem.radioactive ? ' <span class="radioactive-icon" title="放射性元素族">☢</span>' : ''}</span>
+          </div>
+          <div class="symbol series-sym">${elem.s}</div>
+          <div class="zh-name series-zh">${elem.zh}</div>
+        `;
+        return cell;
+      }
+
+      const matchedModel = matchedElementsMap.get(elem.z);
+
+      if (matchedModel) {
+        const isCurrent = normCurrent.includes(matchedModel.elemEn.toLowerCase()) || 
+                          normCurrent.includes(matchedModel.elemZh) ||
+                          normCurrent.includes(matchedModel.label.toLowerCase());
+        const isAvailable = matchedModel.available;
+
+        if (isCurrent) {
+          cell.classList.add('is-current');
+          cell.title = `当前模型：${matchedModel.label}`;
+        } else if (isAvailable) {
+          cell.classList.add('is-available');
+          cell.title = `匹配模型：${matchedModel.label} (已开放 · 点击切换)`;
+        } else {
+          cell.classList.add('is-unauthorized');
+          cell.title = `匹配模型：${matchedModel.label} (已发布 · 当前账号暂无使用权限)`;
+        }
+
+        if (matchedModel.hasEffort) {
+          cell.onclick = (e) => {
+            e.stopPropagation();
+            showEffortPopover(cell, matchedModel.label);
+          };
+        } else {
+          cell.onclick = (e) => {
+            e.stopPropagation();
+            window.__selectRealModel(matchedModel.label);
+          };
+        }
+      } else {
+        cell.classList.add('is-unreleased');
+        const radioInfo = elem.radioactive ? ' [☢ 放射性核素]' : '';
+        cell.title = `${elem.z}. ${elem.zh} (${elem.en})${radioInfo} · 未发布`;
+        cell.onclick = (e) => {
+          e.stopPropagation();
+          const radioToast = elem.radioactive ? ' [☢ 放射性元素]' : '';
+          showToast(`ℹ️ 元素 [${elem.zh} ${elem.en}]${radioToast} 暂未发布对应模型`, 'info');
+        };
+      }
+
+      if (elem.radioactive) cell.classList.add('is-radioactive');
+      cell.innerHTML = `
+        <div class="z-row">
+          <span class="z-num">${elem.z}${elem.radioactive ? ' <span class="radioactive-icon" title="放射性核素">☢</span>' : ''}</span>
+        </div>
+        <div class="symbol">${elem.s}</div>
+        <div class="zh-name">${elem.zh}</div>
+      `;
+      return cell;
+    }
+
+    // 渲染主周期表 7 周期 x 18 族
     for (let r = 0; r < 7; r++) {
       for (let c = 0; c < 18; c++) {
         const elem = map[r][c];
-        const cell = document.createElement('div');
-
-        if (!elem) {
-          cell.className = 'agy-elem-cell empty';
-          grid.appendChild(cell);
-          continue;
-        }
-
-        cell.className = 'agy-elem-cell';
-        const matchedModel = matchedElementsMap.get(elem.z);
-
-        if (matchedModel) {
-          const isCurrent = normCurrent.includes(matchedModel.elemEn.toLowerCase()) || 
-                            normCurrent.includes(matchedModel.elemZh) ||
-                            normCurrent.includes(matchedModel.label.toLowerCase());
-          const isAvailable = matchedModel.available;
-
-          if (isCurrent) {
-            cell.classList.add('is-current');
-            cell.title = `当前模型：${matchedModel.label}`;
-          } else if (isAvailable) {
-            cell.classList.add('is-available');
-            cell.title = `匹配模型：${matchedModel.label} (已开放 · 点击切换)`;
-          } else {
-            cell.classList.add('is-unauthorized');
-            cell.title = `匹配模型：${matchedModel.label} (已发布 · 当前账号暂无使用权限)`;
-          }
-
-          if (matchedModel.hasEffort) {
-            cell.onclick = (e) => {
-              e.stopPropagation();
-              showEffortPopover(cell, matchedModel.label);
-            };
-          } else {
-            cell.onclick = (e) => {
-              e.stopPropagation();
-              window.__selectRealModel(matchedModel.label);
-            };
-          }
-        } else {
-          cell.classList.add('is-unreleased');
-          cell.title = `${elem.z}. ${elem.zh} (${elem.en}) · 未发布`;
-          cell.onclick = (e) => {
-            e.stopPropagation();
-            showToast(`ℹ️ 元素 [${elem.zh} ${elem.en}] 暂未发布对应模型`, 'info');
-          };
-        }
-
-        cell.innerHTML = `
-          <div class="z-num">${elem.z}</div>
-          <div class="symbol">${elem.s}</div>
-          <div class="zh-name">${elem.zh}</div>
-        `;
-        grid.appendChild(cell);
+        grid.appendChild(createElemCell(elem));
       }
+    }
+
+    // 渲染镧系与锕系放射性元素族专属区 (f 区，每行 3 列跨度标题 + 15 元素 = 18 列完美对齐)
+    const fblockGrid = document.getElementById('agy-fblock-grid');
+    if (fblockGrid) {
+      fblockGrid.innerHTML = '';
+
+      // 第 1 行：镧系元素 (57 La ~ 71 Lu)
+      const lanLabel = document.createElement('div');
+      lanLabel.className = 'agy-fblock-label lanthanide-label';
+      lanLabel.innerHTML = `
+        <div class="fblock-title-box">
+          <span class="fblock-title">★ 镧系元素</span>
+          <span class="fblock-sub">57 - 71 · Lanthanides</span>
+        </div>
+        <span class="fblock-count">15 元素</span>
+      `;
+      fblockGrid.appendChild(lanLabel);
+      LANTHANIDES.forEach(elem => {
+        fblockGrid.appendChild(createElemCell(elem));
+      });
+
+      // 第 2 行：锕系元素 (89 Ac ~ 103 Lr，全放射性核素)
+      const actLabel = document.createElement('div');
+      actLabel.className = 'agy-fblock-label actinide-label';
+      actLabel.innerHTML = `
+        <div class="fblock-title-box">
+          <span class="fblock-title">★★ 锕系元素 <span class="radioactive-tag">☢</span></span>
+          <span class="fblock-sub">89 - 103 · 全放射性元素族</span>
+        </div>
+        <span class="fblock-count">15 元素</span>
+      `;
+      fblockGrid.appendChild(actLabel);
+      ACTINIDES.forEach(elem => {
+        fblockGrid.appendChild(createElemCell(elem));
+      });
     }
 
     // 渲染最下方“其他模型”
@@ -1591,6 +1879,11 @@
     });
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     window.__agyElementsObserver = observer;
+    window.__ALL_ELEMENTS = ALL_ELEMENTS;
+    window.__LANTHANIDES = LANTHANIDES;
+    window.__ACTINIDES = ACTINIDES;
+    window.__openElementsModal = openModal;
+    window.__closeElementsModal = closeModal;
   }
 
   init();
