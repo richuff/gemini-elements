@@ -1472,27 +1472,43 @@
     document.head.appendChild(style);
   }
 
+  // 动态解析输入框底栏与触发器挂载容器（多层兜底，完美适配冷启动）
+  function getComposerContainer() {
+    const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
+    if (nativeTrigger) {
+      const mountParent = nativeTrigger.parentElement?.parentElement || nativeTrigger.parentElement;
+      const rootFooter = nativeTrigger.closest('[data-agent-composer-root]') || 
+                         nativeTrigger.closest('footer') || 
+                         nativeTrigger.closest('div[class*="input-footer"]') ||
+                         mountParent;
+      if (rootFooter && !rootFooter.classList.contains('agy-composer-footer')) {
+        rootFooter.classList.add('agy-composer-footer');
+      }
+      return { nativeTrigger, mountParent, rootFooter };
+    }
+    const rootFooter = document.querySelector('.agy-composer-footer') ||
+                       document.querySelector('[data-agent-composer-root]') || 
+                       document.querySelector('footer') || 
+                       document.querySelector('div[class*="input-footer"]');
+    return { nativeTrigger: null, mountParent: rootFooter, rootFooter };
+  }
+
   // 更新触发按钮（以当前模型命名）
   function updateTriggerButton() {
-    const footer = document.querySelector('.agy-composer-footer');
-    if (!footer) return;
+    const { nativeTrigger, mountParent } = getComposerContainer();
+    if (!nativeTrigger && !mountParent) return;
 
     let btn = document.getElementById('agy-custom-model-trigger');
 
-    if (!btn || !footer.contains(btn)) {
-      if (btn && !footer.contains(btn)) {
-        btn.remove();
-      }
+    if (!btn || (mountParent && !mountParent.contains(btn))) {
+      if (btn) btn.remove();
       btn = document.createElement('button');
       btn.id = 'agy-custom-model-trigger';
       btn.type = 'button';
       btn.className = 'agy-unified-model-btn';
 
-      const nativeTrigger = footer.querySelector('button[data-testid="model-selector-trigger"]');
-      if (nativeTrigger && nativeTrigger.parentElement) {
-        nativeTrigger.parentElement.parentElement.appendChild(btn);
-      } else {
-        footer.appendChild(btn);
+      if (mountParent) {
+        mountParent.appendChild(btn);
       }
     }
 
@@ -1857,18 +1873,15 @@
     if (window.__setOtherModelsExpanded) window.__setOtherModelsExpanded(false);
 
     const observer = new MutationObserver(() => {
-      const footer = document.querySelector('.agy-composer-footer');
+      const { nativeTrigger, mountParent } = getComposerContainer();
       const btn = document.getElementById('agy-custom-model-trigger');
-      if (!btn || (footer && !footer.contains(btn))) {
+      if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
         updateTriggerButton();
-      } else {
-        const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
-        if (nativeTrigger) {
-          const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
-          if (t && t !== currentModelName) {
-            currentModelName = t;
-            updateTriggerButton();
-          }
+      } else if (nativeTrigger) {
+        const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
+        if (t && t !== currentModelName) {
+          currentModelName = t;
+          updateTriggerButton();
         }
       }
     });

@@ -163,10 +163,10 @@ class ElementsDaemon {
               method: 'Runtime.evaluate',
               params: {
                 expression: `(() => {
-                  const footer = document.querySelector('.agy-composer-footer');
+                  const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
                   const btn = document.getElementById('agy-custom-model-trigger');
                   const overlay = document.getElementById('agy-periodic-modal-overlay');
-                  if (footer && (!btn || !footer.contains(btn) || !overlay)) {
+                  if (nativeTrigger && (!btn || !overlay)) {
                     return 'reinject';
                   }
                   return 'ok';
@@ -188,8 +188,8 @@ class ElementsDaemon {
             LOG('DOM changed or trigger missing in current conversation, re-injecting periodic_ui.js...');
             injectScript();
           }
-          if (msg.method === 'Page.loadEventFired') {
-            LOG('Page reloaded, re-injecting...');
+          if (msg.method === 'Page.loadEventFired' || msg.method === 'Page.frameNavigated') {
+            LOG('Page reloaded or navigated, re-injecting...');
             injectScript();
           }
         } catch (e) {}
