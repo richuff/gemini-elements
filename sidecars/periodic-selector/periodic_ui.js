@@ -292,12 +292,14 @@
     nativeTrigger.setAttribute('style', oldStyle);
     document.body.classList.remove('agy-suppress-native-menu');
 
-    // 关闭我们的模态框并刷新按钮显示
-    closeModal();
-    setTimeout(() => {
-      getCurrentActiveModel();
-      updateTriggerButton();
-    }, 350);
+    // 只有成功切换模型才关闭模态框并刷新按钮显示
+    if (success) {
+      closeModal();
+      setTimeout(() => {
+        getCurrentActiveModel();
+        updateTriggerButton();
+      }, 350);
+    }
 
     return success;
   };
@@ -345,12 +347,14 @@
     nativeTrigger.setAttribute('style', oldStyle);
     document.body.classList.remove('agy-suppress-native-menu');
 
-    closeModal();
     hideEffortPopover();
-    setTimeout(() => {
-      getCurrentActiveModel();
-      updateTriggerButton();
-    }, 350);
+    if (success) {
+      closeModal();
+      setTimeout(() => {
+        getCurrentActiveModel();
+        updateTriggerButton();
+      }, 350);
+    }
 
     return success;
   };
@@ -1446,31 +1450,36 @@
         font-weight: 700;
       }
 
-      /* Toast 提示条 */
+      /* Toast 提示条 (浮动于模态框最底部居中) */
       #agy-model-toast {
         position: fixed;
-        bottom: 50px;
+        bottom: 36px;
         left: 50%;
         transform: translateX(-50%) translateY(20px);
         background: #0f172a;
         border: 1px solid #38bdf8;
-        padding: 8px 16px;
-        border-radius: 8px;
+        padding: 9px 18px;
+        border-radius: 10px;
         color: #ffffff;
-        font-size: 12.5px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        font-size: 13px;
+        font-weight: 500;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
         opacity: 0;
         pointer-events: none;
-        transition: all 0.2s ease;
+        transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
         z-index: 1000000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
       #agy-model-toast.show {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
       }
       #agy-model-toast.agy-toast-success { border-color: #10b981; color: #6ee7b7; }
-      #agy-model-toast.agy-toast-warning { border-color: #f59e0b; color: #fde68a; }
+      #agy-model-toast.agy-toast-warning { border-color: #f59e0b; color: #fef08a; background: #1c1917; }
       #agy-model-toast.agy-toast-error { border-color: #ef4444; color: #fca5a5; }
+      #agy-model-toast.agy-toast-info { border-color: #0ea5e9; color: #e0f2fe; }
     `;
     document.head.appendChild(style);
   }
@@ -1710,7 +1719,12 @@
           cell.title = `匹配模型：${matchedModel.label} (已发布 · 当前账号暂无使用权限)`;
         }
 
-        if (matchedModel.hasEffort) {
+        if (!isAvailable) {
+          cell.onclick = (e) => {
+            e.stopPropagation();
+            showToast(`🔒 模型 [${matchedModel.label}] 当前账号暂无使用权限`, 'warning');
+          };
+        } else if (matchedModel.hasEffort) {
           cell.onclick = (e) => {
             e.stopPropagation();
             showEffortPopover(cell, matchedModel.label);
@@ -1809,7 +1823,12 @@
         <span class="agy-other-tag ${tagClass}">${tagText}</span>
       `;
 
-      if (m.hasEffort) {
+      if (!isAvailable) {
+        card.onclick = (e) => {
+          e.stopPropagation();
+          showToast(`🔒 模型 [${m.label}] 当前账号暂无使用权限`, 'warning');
+        };
+      } else if (m.hasEffort) {
         card.onclick = (e) => {
           e.stopPropagation();
           showEffortPopover(card, m.label);
