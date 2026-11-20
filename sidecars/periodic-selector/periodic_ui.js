@@ -14,6 +14,9 @@
   if (window.__agyElementsObserver) {
     try { window.__agyElementsObserver.disconnect(); } catch (e) {}
   }
+  if (window.__agyElementsHeartbeat) {
+    try { clearInterval(window.__agyElementsHeartbeat); } catch (e) {}
+  }
 
   ['agy-elements-trigger-btn', 'agy-custom-model-trigger', 'agy-elements-modal-overlay', 'agy-model-modal-overlay', 'agy-periodic-modal-overlay',
    'agy-elements-styles', 'agy-model-elements-styles', 'agy-light-periodic-styles', 'agy-model-toast', 'agy-effort-popover'].forEach(id => {
@@ -1859,41 +1862,84 @@
     }
   }
 
-  // 初始化
+  // 初始化（针对系统冷启动与重启场景，等待系统与 DOM 彻底加载就绪）
   function init() {
-    if (window.__agyElementsObserver) {
-      try { window.__agyElementsObserver.disconnect(); } catch (_) {}
-    }
-    injectStyles();
-    createModal();
-    initModelMappings();
-    getCurrentActiveModel();
-    updateTriggerButton();
-    renderAll();
-    if (window.__setOtherModelsExpanded) window.__setOtherModelsExpanded(false);
-
-    const observer = new MutationObserver(() => {
-      const { nativeTrigger, mountParent } = getComposerContainer();
-      const btn = document.getElementById('agy-custom-model-trigger');
-      if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
-        updateTriggerButton();
-      } else if (nativeTrigger) {
-        const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
-        if (t && t !== currentModelName) {
-          currentModelName = t;
-          updateTriggerButton();
-        }
+    function bootstrap() {
+      if (window.__agyElementsObserver) {
+        try { window.__agyElementsObserver.disconnect(); } catch (_) {}
       }
-    });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    window.__agyElementsObserver = observer;
-    window.__ALL_ELEMENTS = ALL_ELEMENTS;
-    window.__LANTHANIDES = LANTHANIDES;
-    window.__ACTINIDES = ACTINIDES;
-    window.__openElementsModal = openModal;
-    window.__closeElementsModal = closeModal;
+      if (window.__agyElementsHeartbeat) {
+        try { clearInterval(window.__agyElementsHeartbeat); } catch (_) {}
+      }
+
+      injectStyles();
+      createModal();
+      initModelMappings();
+      getCurrentActiveModel();
+      updateTriggerButton();
+      renderAll();
+      if (window.__setOtherModelsExpanded) window.__setOtherModelsExpanded(false);
+
+      // 1. MutationObserver 监听 DOM 树变化
+      const observer = new MutationObserver(() => {
+        const { nativeTrigger, mountParent } = getComposerContainer();
+        const btn = document.getElementById('agy-custom-model-trigger');
+        if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
+          updateTriggerButton();
+        } else if (nativeTrigger) {
+          const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
+          if (t && t !== currentModelName) {
+            currentModelName = t;
+            updateTriggerButton();
+          }
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      window.__agyElementsObserver = observer;
+
+      // 2. 定时心跳自愈兜底（每 1200ms 检测一次，防任何未被 MutationObserver 捕获的 React 虚拟 DOM 刷新）
+      window.__agyElementsHeartbeat = setInterval(() => {
+        const { nativeTrigger, mountParent } = getComposerContainer();
+        const btn = document.getElementById('agy-custom-model-trigger');
+        if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
+          updateTriggerButton();
+        } else if (nativeTrigger) {
+          const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
+          if (t && t !== currentModelName) {
+            currentModelName = t;
+            updateTriggerButton();
+          }
+        }
+      }, 1200);
+
+      window.__ALL_ELEMENTS = ALL_ELEMENTS;
+      window.__LANTHANIDES = LANTHANIDES;
+      window.__ACTINIDES = ACTINIDES;
+      window.__openElementsModal = openModal;
+      window.__closeElementsModal = closeModal;
+      console.log('[GeminiElements] Pure Clean Periodic Selector Initialized.');
+    }
+
+    // 等待系统与 DOM 彻底加载就绪（针对系统冷启动与重启场景）
+    function waitForSystemReady(callback, maxAttempts = 60) {
+      let attempts = 0;
+      const timer = setInterval(() => {
+        attempts++;
+        const trigger = document.querySelector('button[data-testid="model-selector-trigger"]');
+        const isComplete = document.readyState === 'complete';
+        if ((trigger && isComplete) || attempts >= maxAttempts) {
+          clearInterval(timer);
+          callback();
+        }
+      }, 250);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => waitForSystemReady(bootstrap));
+    } else {
+      waitForSystemReady(bootstrap);
+    }
   }
 
   init();
-  console.log('[GeminiElements] Pure Clean Periodic Selector Initialized.');
 })();

@@ -4,9 +4,10 @@
  * 
  * 机制：
  *   1. 读取 %APPDATA%\Antigravity\DevToolsActivePort 获取本地 CDP 调试端口
- *   2. 建立与 Antigravity 桌面端主页面的 WebSocket 连接
- *   3. 注入 periodic_ui.js 渲染元素周期表与模型选择交互
- *   4. 心跳保活与自动重连（会话刷新、页面跳转时自动重新注入）
+ *   2. 非阻塞多目标管理：动态追踪所有 Antigravity 会话窗口，永不卡死
+ *   3. 等待系统与 React 界面完全加载就绪后再注入（避免过早注入导致组件丢失）
+ *   4. 心跳保活与自愈监听：页面重载、SPA 路由跳转、DOM 刷新时智能自愈
+ *   5. 互斥锁守护：避免单机重复运行
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -80,17 +81,148 @@ function acquireSingleInstanceLock(port = 58118) {
   });
 }
 
+class PageSession {
+  constructor(id, title, url, wsUrl) {
+    this.id = id;
+    this.title = title || '';
+    this.url = url || '';
+    this.wsUrl = wsUrl;
+    this.ws = null;
+    this.healthInterval = null;
+    this.closed = false;
+    this.isInjecting = false;
+  }
+
+  start() {
+    LOG(`[Target ${this.id}] Connecting WebSocket to: ${this.url || this.title || this.wsUrl}`);
+    const ws = new WebSocket(this.wsUrl);
+    this.ws = ws;
+
+    ws.onopen = () => {
+      LOG(`[Target ${this.id}] WebSocket connected.`);
+      ws.send(JSON.stringify({ id: 10, method: 'Page.enable' }));
+      ws.send(JSON.stringify({ id: 11, method: 'Runtime.enable' }));
+
+      // 启动自愈与状态轮询检测（每 1000ms 检查一次）
+      this.healthInterval = setInterval(() => {
+        this.checkAndInject();
+      }, 1000);
+
+      // 初次触发检查
+      this.checkAndInject();
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.method === 'Page.frameNavigated' || msg.method === 'Page.loadEventFired') {
+          LOG(`[Target ${this.id}] Page navigated or reloaded. Will wait for system ready...`);
+        }
+        if (msg.id === 9999 && msg.result?.result?.value) {
+          const state = msg.result.result.value;
+          this.handleState(state);
+        }
+      } catch (_) {}
+    };
+
+    ws.onerror = (err) => {
+      LOG(`[Target ${this.id}] WebSocket error:`, err?.message || 'error');
+      this.close();
+    };
+
+    ws.onclose = () => {
+      LOG(`[Target ${this.id}] WebSocket closed.`);
+      this.close();
+    };
+  }
+
+  checkAndInject() {
+    if (this.closed || !this.ws || this.ws.readyState !== WebSocket.OPEN || this.isInjecting) {
+      return;
+    }
+
+    try {
+      this.ws.send(JSON.stringify({
+        id: 9999,
+        method: 'Runtime.evaluate',
+        params: {
+          expression: `(() => {
+            const ready = document.readyState === 'complete';
+            const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
+            const customBtn = document.getElementById('agy-custom-model-trigger');
+            const overlay = document.getElementById('agy-periodic-modal-overlay');
+            const observer = !!window.__agyElementsObserver;
+
+            // 1. 系统尚未加载完成（等待 React 挂载 composer 和原生模型按钮）
+            if (!ready || !nativeTrigger) {
+              return 'waiting_system_ready';
+            }
+
+            // 2. 系统加载完毕，但元素周期表按钮或模态框丢失（冷启动完成、页面切换、组件刷新）
+            if (!customBtn || !overlay || !observer) {
+              return 'needs_injection';
+            }
+
+            // 3. 运行正常
+            return 'ready';
+          })()`,
+          returnByValue: true
+        }
+      }));
+    } catch (_) {}
+  }
+
+  handleState(state) {
+    if (state === 'needs_injection') {
+      LOG(`[Target ${this.id}] System is ready, injecting periodic_ui.js...`);
+      this.doInject();
+    } else if (state === 'waiting_system_ready') {
+      // 系统尚未就绪，静默等待下一次检测
+    }
+  }
+
+  doInject() {
+    if (this.isInjecting || this.closed || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.isInjecting = true;
+    try {
+      const uiCode = readFileSync(UI_SCRIPT_PATH, 'utf8');
+      this.ws.send(JSON.stringify({
+        id: 8888,
+        method: 'Runtime.evaluate',
+        params: { expression: uiCode, userGesture: true }
+      }));
+      LOG(`[Target ${this.id}] Injected periodic_ui.js successfully.`);
+    } catch (e) {
+      LOG(`[Target ${this.id}] Failed to read or send UI script:`, e.message);
+    } finally {
+      setTimeout(() => {
+        this.isInjecting = false;
+      }, 500);
+    }
+  }
+
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    if (this.healthInterval) {
+      clearInterval(this.healthInterval);
+      this.healthInterval = null;
+    }
+    if (this.ws) {
+      try { this.ws.close(); } catch (_) {}
+      this.ws = null;
+    }
+  }
+}
+
 class ElementsDaemon {
   constructor() {
-    this.ws = null;
-    this.currentPort = null;
-    this.injected = false;
-    this.pollInterval = null;
+    this.sessions = new Map(); // targetId -> PageSession
   }
 
   async start() {
     await acquireSingleInstanceLock(58118);
-    LOG('Starting Gemini Elements Periodic Table Sidecar Daemon...');
+    LOG('Starting Gemini Elements Periodic Table Sidecar Daemon (Multi-Target Ready)...');
     this.loop();
   }
 
@@ -99,114 +231,41 @@ class ElementsDaemon {
       try {
         const port = getDevToolsPort();
         if (!port) {
-          // LOG('Waiting for Antigravity DevToolsActivePort...');
-          await new Promise(r => setTimeout(r, 2500));
-          continue;
-        }
-
-        const targets = await fetchJson(`http://127.0.0.1:${port}/json/list`);
-        const mainTarget = targets.find(t => 
-          t.type === 'page' && 
-          !t.url?.startsWith('data:') && 
-          (t.url?.includes('127.0.0.1') || (t.title && (t.title.includes('Antigravity') || t.title.includes('Gemini'))))
-        );
-
-        if (!mainTarget || !mainTarget.webSocketDebuggerUrl) {
           await new Promise(r => setTimeout(r, 2000));
           continue;
         }
 
-        await this.connectAndInject(mainTarget.webSocketDebuggerUrl);
-      } catch (err) {
-        LOG('Error in loop, retrying in 3s:', err.message);
-      }
-      await new Promise(r => setTimeout(r, 3000));
-    }
-  }
+        const targets = await fetchJson(`http://127.0.0.1:${port}/json/list`);
+        const validTargets = targets.filter(t => 
+          t.type === 'page' && 
+          !t.url?.startsWith('data:') && 
+          (t.url?.includes('127.0.0.1') || t.url?.includes('/c/') || (t.title && (t.title.includes('Antigravity') || t.title.includes('Gemini'))))
+        );
 
-  connectAndInject(wsUrl) {
-    return new Promise((resolve) => {
-      LOG('Connecting to Antigravity UI WebSocket:', wsUrl);
-      const ws = new WebSocket(wsUrl);
-      let closed = false;
-      let healthTimer = null;
+        const currentTargetIds = new Set(validTargets.map(t => t.id));
 
-      const injectScript = () => {
-        try {
-          const uiCode = readFileSync(UI_SCRIPT_PATH, 'utf8');
-          ws.send(JSON.stringify({
-            id: Date.now(),
-            method: 'Runtime.evaluate',
-            params: { expression: uiCode, userGesture: true }
-          }));
-        } catch (e) {
-          LOG('Failed to read or send UI script:', e.message);
+        // 移除已经关闭的目标会话
+        for (const [id, session] of this.sessions.entries()) {
+          if (!currentTargetIds.has(id) || session.closed) {
+            LOG(`[Target ${id}] Target gone or closed, cleaning up session.`);
+            session.close();
+            this.sessions.delete(id);
+          }
         }
-      };
 
-      ws.onopen = () => {
-        LOG('WebSocket connected. Injecting periodic_ui.js...');
-        injectScript();
-
-        // 启用 Page 监听以在 reload 时再次注入
-        ws.send(JSON.stringify({ id: 2, method: 'Page.enable' }));
-
-        // 动态健康自愈：每 2 秒检测一次 SPA 路由切换与组件重挂载
-        healthTimer = setInterval(() => {
-          if (closed) {
-            clearInterval(healthTimer);
-            return;
+        // 添加新发现的目标会话
+        for (const target of validTargets) {
+          if (!this.sessions.has(target.id) && target.webSocketDebuggerUrl) {
+            const session = new PageSession(target.id, target.title, target.url, target.webSocketDebuggerUrl);
+            this.sessions.set(target.id, session);
+            session.start();
           }
-          try {
-            ws.send(JSON.stringify({
-              id: 9999,
-              method: 'Runtime.evaluate',
-              params: {
-                expression: `(() => {
-                  const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
-                  const btn = document.getElementById('agy-custom-model-trigger');
-                  const overlay = document.getElementById('agy-periodic-modal-overlay');
-                  if (nativeTrigger && (!btn || !overlay)) {
-                    return 'reinject';
-                  }
-                  return 'ok';
-                })()`,
-                returnByValue: true
-              }
-            }));
-          } catch (_) {}
-        }, 2000);
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.id === 1) {
-            LOG('Injection evaluation completed:', msg.result?.result?.value || 'OK');
-          }
-          if (msg.id === 9999 && msg.result?.result?.value === 'reinject') {
-            LOG('DOM changed or trigger missing in current conversation, re-injecting periodic_ui.js...');
-            injectScript();
-          }
-          if (msg.method === 'Page.loadEventFired' || msg.method === 'Page.frameNavigated') {
-            LOG('Page reloaded or navigated, re-injecting...');
-            injectScript();
-          }
-        } catch (e) {}
-      };
-
-      ws.onerror = (e) => {
-        LOG('WebSocket error:', e.message || 'error');
-        if (healthTimer) clearInterval(healthTimer);
-        if (!closed) { closed = true; resolve(); }
-      };
-
-      ws.onclose = () => {
-        LOG('WebSocket connection closed.');
-        if (healthTimer) clearInterval(healthTimer);
-        if (!closed) { closed = true; resolve(); }
-      };
-    });
+        }
+      } catch (err) {
+        LOG('Error in loop:', err.message);
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
   }
 }
 
