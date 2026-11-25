@@ -10,7 +10,7 @@
  */
 
 (function () {
-  const UI_VERSION = '20261125-v3';
+  const UI_VERSION = '20261125-v4';
   if (window.__agyElementsCleanup) {
     try { window.__agyElementsCleanup(); } catch (e) {}
   }
@@ -376,8 +376,19 @@
     el.click();
   }
 
-  // 静默执行模型切换（彻底屏蔽原生菜单弹出，优先原生 React 状态切换）
+  // 静默执行模型切换（彻底屏蔽原生菜单弹出，优先原生 React 状态切换，带状态锁定检查与真实校验）
   window.__selectRealModel = async function (targetLabel) {
+    const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
+    if (!nativeTrigger) {
+      showToast('❌ 未找到模型选择器', 'error');
+      return false;
+    }
+
+    if (nativeTrigger.disabled || nativeTrigger.hasAttribute('disabled')) {
+      showToast('⏳ 对话运行中，暂不可切换模型', 'warning');
+      return false;
+    }
+
     const live = getLiveModelInfo();
     if (live && live.setSelectedModel && live.modelOptions) {
       const targetNorm = targetLabel.toLowerCase();
@@ -394,18 +405,17 @@
           return false;
         }
         live.setSelectedModel(match);
-        currentModelName = match.label;
-        updateTriggerButton();
-        showToast(`⚡ 已成功切换模型至：${match.label}`, 'success');
-        closeModal();
-        return true;
+        await new Promise(r => setTimeout(r, 80));
+        const afterLive = getLiveModelInfo();
+        const verified = afterLive?.selectedModel?.value === match.value || afterLive?.selectedModel?.label === match.label;
+        if (verified) {
+          getCurrentActiveModel();
+          updateTriggerButton();
+          showToast(`⚡ 已成功切换模型至：${match.label}`, 'success');
+          closeModal();
+          return true;
+        }
       }
-    }
-
-    const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
-    if (!nativeTrigger) {
-      showToast('❌ 未找到模型选择器', 'error');
-      return false;
     }
 
     // 开启全局原生菜单抑制，禁止其显示在屏幕任何位置
@@ -415,8 +425,8 @@
     const oldStyle = nativeTrigger.getAttribute('style') || '';
     nativeTrigger.setAttribute('style', 'position:fixed !important; bottom:0 !important; left:0 !important; opacity:0 !important; pointer-events:none !important;');
 
-    nativeTrigger.click();
-    await new Promise(r => setTimeout(r, 120));
+    simulateFullClick(nativeTrigger);
+    await new Promise(r => setTimeout(r, 150));
 
     const menuItems = Array.from(document.querySelectorAll('[role="menuitem"]'));
     const targetNorm = targetLabel.toLowerCase();
@@ -436,34 +446,30 @@
 
     let success = false;
     if (!target) {
-      nativeTrigger.click(); // 关闭
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
       showToast(`⚠️ 接口中未找到模型 [${targetLabel}]`, 'warning');
     } else {
       const isDisabled = target.hasAttribute('data-disabled') || target.getAttribute('aria-disabled') === 'true' || target.innerText.includes('Unavailable');
       if (isDisabled) {
-        nativeTrigger.click(); // 关闭
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
         showToast(`🔒 当前账号暂无 [${targetLabel}] 使用权限`, 'warning');
       } else {
         simulateFullClick(target);
         success = true;
-        currentModelName = targetLabel;
-        updateTriggerButton();
         showToast(`⚡ 已成功切换模型至：${targetLabel}`, 'success');
       }
     }
 
-    // 稍等以确保关闭完成再恢复
-    await new Promise(r => setTimeout(r, 60));
+    await new Promise(r => setTimeout(r, 80));
     nativeTrigger.setAttribute('style', oldStyle);
     document.body.classList.remove('agy-suppress-native-menu');
 
-    // 只有成功切换模型才关闭模态框并刷新按钮显示
     if (success) {
       closeModal();
       setTimeout(() => {
         getCurrentActiveModel();
         updateTriggerButton();
-      }, 350);
+      }, 200);
     }
 
     return success;
@@ -481,8 +487,20 @@
     return new RegExp(`\\(${t}\\)|\\b${t}\\b`, 'i').test(l);
   }
 
-  // 带有思考能级（动态支持 Low / Medium / High / XHigh）的模型切换（优先原生 React 状态切换）
+  // 带有思考能级（动态支持 Low / Medium / High / XHigh）的模型切换（优先原生 React 状态切换，带状态锁定检查与真实校验）
   window.__selectModelWithEffort = async function (modelBase, effortTier) {
+    const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
+    if (!nativeTrigger) {
+      showToast('❌ 未找到模型选择器', 'error');
+      return false;
+    }
+
+    if (nativeTrigger.disabled || nativeTrigger.hasAttribute('disabled')) {
+      showToast('⏳ 对话运行中，暂不可切换模型', 'warning');
+      hideEffortPopover();
+      return false;
+    }
+
     const live = getLiveModelInfo();
     if (live && live.setSelectedModel && live.modelOptions) {
       const baseNorm = modelBase.toLowerCase();
@@ -503,53 +521,54 @@
           return false;
         }
         live.setSelectedModel(match);
-        currentModelName = match.label;
-        updateTriggerButton();
-        showToast(`⚡ 已成功切换模型至：${match.label}`, 'success');
-        hideEffortPopover();
-        closeModal();
-        return true;
+        await new Promise(r => setTimeout(r, 80));
+        const afterLive = getLiveModelInfo();
+        const verified = afterLive?.selectedModel?.value === match.value || afterLive?.selectedModel?.label === match.label;
+        if (verified) {
+          getCurrentActiveModel();
+          updateTriggerButton();
+          showToast(`⚡ 已成功切换模型至：${match.label}`, 'success');
+          hideEffortPopover();
+          closeModal();
+          return true;
+        }
       }
-    }
-
-    const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
-    if (!nativeTrigger) {
-      showToast('❌ 未找到模型选择器', 'error');
-      return false;
     }
 
     document.body.classList.add('agy-suppress-native-menu');
     const oldStyle = nativeTrigger.getAttribute('style') || '';
     nativeTrigger.setAttribute('style', 'position:fixed !important; bottom:0 !important; left:0 !important; opacity:0 !important; pointer-events:none !important;');
 
-    nativeTrigger.click();
+    simulateFullClick(nativeTrigger);
     await new Promise(r => setTimeout(r, 180));
 
-    const effortGroup = document.querySelector('[data-testid="model-selector-effort-group"]')?.closest('[role="menuitem"]');
     let success = false;
+    const effortGroup = document.querySelector('[data-testid="model-selector-effort-group"]')?.closest('[role="menuitem"]');
     if (effortGroup) {
       effortGroup.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', bubbles: true }));
       await new Promise(r => setTimeout(r, 220));
 
-      const optSpan = document.querySelector(`[data-testid="model-selector-effort-option"][data-effort="${effortTier.toLowerCase()}"]`);
+      const tNorm = effortTier.toLowerCase();
+      let optSpan = document.querySelector(`[data-testid="model-selector-effort-option"][data-effort="${tNorm}"]`);
+      if (!optSpan && tNorm === 'xhigh') {
+        optSpan = document.querySelector(`[data-testid="model-selector-effort-option"][data-effort="extra_high"], [data-testid="model-selector-effort-option"][data-effort="extra-high"]`);
+      }
       const targetOption = optSpan?.closest('[role="menuitemradio"]') || optSpan;
       if (targetOption) {
         simulateFullClick(targetOption);
         if (optSpan && optSpan !== targetOption) simulateFullClick(optSpan);
         success = true;
-        const tierCap = effortTier.charAt(0).toUpperCase() + effortTier.slice(1).toLowerCase();
-        currentModelName = `${modelBase} ${tierCap}`;
-        updateTriggerButton();
+        const tierCap = tNorm === 'xhigh' ? 'Extra High' : (effortTier.charAt(0).toUpperCase() + effortTier.slice(1).toLowerCase());
         showToast(`⚡ 已成功切换模型至：${modelBase} (${tierCap})`, 'success');
       }
     }
 
     if (!success) {
-      nativeTrigger.click();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
       showToast(`⚠️ 切换 [${modelBase}] 档位失败`, 'warning');
     }
 
-    await new Promise(r => setTimeout(r, 60));
+    await new Promise(r => setTimeout(r, 80));
     nativeTrigger.setAttribute('style', oldStyle);
     document.body.classList.remove('agy-suppress-native-menu');
 
@@ -559,7 +578,7 @@
       setTimeout(() => {
         getCurrentActiveModel();
         updateTriggerButton();
-      }, 350);
+      }, 200);
     }
 
     return success;
@@ -898,13 +917,16 @@
     const style = document.createElement('style');
     style.id = 'agy-light-periodic-styles';
     style.textContent = `
-      /* 隐藏原生选择器，采用精确定位尺寸收缩，杜绝 (0,0) 左上角异常 */
+      /* 隐藏原生选择器，采用精确定位尺寸收缩，杜绝 (0,0) 左上角异常与残留占位 */
       button[data-testid="model-selector-trigger"] {
         position: absolute !important;
         opacity: 0 !important;
         pointer-events: none !important;
-        width: 1px !important;
-        height: 1px !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
         overflow: hidden !important;
         clip: rect(0, 0, 0, 0) !important;
       }
@@ -2158,6 +2180,20 @@
       renderAll();
       if (window.__setOtherModelsExpanded) window.__setOtherModelsExpanded(false);
 
+      function syncTriggerDisplay() {
+        const { nativeTrigger, mountParent } = getComposerContainer();
+        const btn = document.getElementById('agy-custom-model-trigger');
+        if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
+          updateTriggerButton();
+        } else if (nativeTrigger) {
+          const prev = currentModelName;
+          getCurrentActiveModel();
+          if (currentModelName !== prev) {
+            updateTriggerButton();
+          }
+        }
+      }
+
       // 1. MutationObserver 监听 DOM 树变化（防抖且不监听 characterData，彻底根除打字掉帧）
       let scheduled = false;
       const observer = new MutationObserver(() => {
@@ -2165,36 +2201,14 @@
         scheduled = true;
         requestAnimationFrame(() => {
           scheduled = false;
-          const { nativeTrigger, mountParent } = getComposerContainer();
-          const btn = document.getElementById('agy-custom-model-trigger');
-          if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
-            updateTriggerButton();
-          } else if (nativeTrigger) {
-            const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
-            if (t && t !== currentModelName) {
-              currentModelName = t;
-              updateTriggerButton();
-            }
-          }
+          syncTriggerDisplay();
         });
       });
       observer.observe(document.body, { childList: true, subtree: true });
       window.__agyElementsObserver = observer;
 
       // 2. 定时心跳自愈兜底（每 1200ms 检测一次，防任何未被 MutationObserver 捕获的 React 虚拟 DOM 刷新）
-      window.__agyElementsHeartbeat = setInterval(() => {
-        const { nativeTrigger, mountParent } = getComposerContainer();
-        const btn = document.getElementById('agy-custom-model-trigger');
-        if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
-          updateTriggerButton();
-        } else if (nativeTrigger) {
-          const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
-          if (t && t !== currentModelName) {
-            currentModelName = t;
-            updateTriggerButton();
-          }
-        }
-      }, 1200);
+      window.__agyElementsHeartbeat = setInterval(syncTriggerDisplay, 1200);
 
       window.__ALL_ELEMENTS = ALL_ELEMENTS;
       window.__LANTHANIDES = LANTHANIDES;
