@@ -10,6 +10,11 @@
  */
 
 (function () {
+  const UI_VERSION = '20261125-v2';
+  if (window.__agyElementsCleanup) {
+    try { window.__agyElementsCleanup(); } catch (e) {}
+  }
+
   // 清除旧版本任何残留 DOM 与观察器
   if (window.__agyElementsObserver) {
     try { window.__agyElementsObserver.disconnect(); } catch (e) {}
@@ -176,52 +181,188 @@
     ...ACTINIDES
   ];
 
-  // 接口中确切存在的 8 个真实模型定义（零虚构）
-  const KNOWN_INTERFACE_MODELS = [
-    { label: 'Gemini 4 Neon', available: false, elemEn: 'neon', elemZh: '氖' },
-    { label: 'Gemini 4 Carbon', available: false, elemEn: 'carbon', elemZh: '碳' },
-    { label: 'Gemini 4 Argon', available: false, elemEn: 'argon', elemZh: '氩' },
-    { label: 'Gemini 4 Hydrogen', available: false, elemEn: 'hydrogen', elemZh: '氢' },
-    { label: 'Gemini 3.8 Flash', available: true, isOther: true, hasEffort: true },
-    { label: 'Claude Sonnet 4.6 (Thinking)', available: true, isOther: true },
-    { label: 'Claude Opus 4.6 (Thinking)', available: true, isOther: true },
-    { label: 'GPT-OSS 120B (Medium)', available: true, isOther: true }
+  // 基础已知 Gemini 4 元素模型库（作为目录索引，由动态探测机制接管其实际可用性）
+  const CATALOG_ELEMENT_MODELS = [
+    { label: 'Gemini 4 Hydrogen', elemEn: 'hydrogen', elemZh: '氢', hasEffort: true },
+    { label: 'Gemini 4 Neon', elemEn: 'neon', elemZh: '氖', hasEffort: false },
+    { label: 'Gemini 4 Carbon', elemEn: 'carbon', elemZh: '碳', hasEffort: false },
+    { label: 'Gemini 4 Argon', elemEn: 'argon', elemZh: '氩', hasEffort: false }
   ];
 
   let currentModelName = '默认模型';
   let matchedElementsMap = new Map(); // z -> modelInfo
   let otherModelsList = [];
 
+  // 动态探查 Antigravity 原生 React 状态中的 live 模型列表与选择器
+  function getLiveModelInfo() {
+    const trigger = document.querySelector('button[data-testid="model-selector-trigger"]');
+    if (!trigger) return null;
+    const keys = Object.keys(trigger);
+    const reactKey = keys.find(k => k.startsWith('__reactFiber') || k.startsWith('__reactProps'));
+    if (!reactKey) return null;
+
+    let fiber = trigger[reactKey];
+    while (fiber) {
+      if (fiber.memoizedProps && fiber.memoizedProps.modelOptions) {
+        return {
+          modelOptions: fiber.memoizedProps.modelOptions,
+          selectedModel: fiber.memoizedProps.selectedModel,
+          setSelectedModel: fiber.memoizedProps.setSelectedModel
+        };
+      }
+      fiber = fiber.return;
+    }
+    return null;
+  }
+
+  // 解析模型标签中的基础名称与档位（如 Gemini 4 Hydrogen (High) -> base: Gemini 4 Hydrogen, tier: High）
+  function parseModelLabel(rawLabel) {
+    if (!rawLabel) return { base: '', tier: null, raw: '' };
+    const str = String(rawLabel).trim();
+    const isGemini = /gemini/i.test(str);
+    if (isGemini) {
+      const effortRegex = /\s*(?:\((Low|Medium|High|XHigh|Extra High)\)|(Low|Medium|High|XHigh|Extra High))$/i;
+      const match = str.match(effortRegex);
+      if (match) {
+        const tier = match[1] || match[2];
+        const base = str.replace(effortRegex, '').trim();
+        return { base, tier, raw: str };
+      }
+    }
+    return { base: str, tier: null, raw: str };
+  }
+
+  // 动态匹配模型名称与周期表 118 元素实体
+  function findMatchingElement(modelName) {
+    if (!modelName) return null;
+    const norm = modelName.toLowerCase();
+    // 1. 优先按英文全称作为独立单词边界匹配（如 hydrogen, neon, argon, carbon）
+    for (const elem of ALL_ELEMENTS) {
+      if (!elem.en) continue;
+      const regex = new RegExp(`(^|[^a-z0-9])${elem.en.toLowerCase()}([^a-z0-9]|$)`, 'i');
+      if (regex.test(norm)) {
+        return elem;
+      }
+    }
+    // 2. 按中文汉字单字匹配（如 氢, 氖, 氩, 碳 等）
+    for (const elem of ALL_ELEMENTS) {
+      if (elem.zh && modelName.includes(elem.zh)) {
+        return elem;
+      }
+    }
+    return null;
+  }
+
   // 获取当前活跃模型文本
   function getCurrentActiveModel() {
+    const live = getLiveModelInfo();
+    if (live && live.selectedModel?.label) {
+      currentModelName = live.selectedModel.label.trim();
+      return currentModelName;
+    }
     const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
     if (nativeTrigger) {
-      const text = nativeTrigger.innerText.trim().replace(/\s+/g, ' ');
-      currentModelName = text || '默认模型';
+      const label = nativeTrigger.getAttribute('data-model-label');
+      const text = (label || nativeTrigger.innerText || '').trim().replace(/\s+/g, ' ');
+      if (text) currentModelName = text;
     }
     return currentModelName;
   }
 
-  // 计算元素与模型全称对应映射
+  // 动态全息计算元素与模型对应映射（实时探查宿主模型，彻底告别写死锁死）
   function initModelMappings() {
     matchedElementsMap.clear();
-    const other = [];
+    const otherMap = new Map();
+    const discoveredElemModels = new Map();
 
-    KNOWN_INTERFACE_MODELS.forEach(m => {
-      if (m.isOther) {
-        other.push(m);
-        return;
-      }
-      // 按英文全称精确匹配到周期表元素（含镧系与锕系全 118 元素）
-      const elem = ALL_ELEMENTS.find(e => e.en.toLowerCase() === m.elemEn.toLowerCase() || e.zh === m.elemZh);
+    const live = getLiveModelInfo();
+    const liveOptions = live?.modelOptions ? Array.from(live.modelOptions) : [];
+
+    const liveBaseMap = new Map();
+    if (liveOptions.length > 0) {
+      liveOptions.forEach(opt => {
+        const rawLabel = opt.label || '';
+        const { base, tier } = parseModelLabel(rawLabel);
+        const isAvail = !opt.disabled;
+
+        if (!liveBaseMap.has(base)) {
+          liveBaseMap.set(base, {
+            base,
+            available: isAvail,
+            tiers: new Set(),
+            rawOptions: []
+          });
+        }
+        const entry = liveBaseMap.get(base);
+        if (isAvail) entry.available = true;
+        if (tier) entry.tiers.add(tier);
+        entry.rawOptions.push(opt);
+      });
+    }
+
+    // 处理 live 提取出来的模型
+    liveBaseMap.forEach((entry, base) => {
+      const elem = findMatchingElement(base);
+      const hasEffort = entry.tiers.size > 1 || entry.rawOptions.some(o => o.supportsThoughtCirculation || o.supportsEffort);
+
       if (elem) {
-        matchedElementsMap.set(elem.z, m);
+        discoveredElemModels.set(elem.z, {
+          label: base,
+          rawLabel: base,
+          available: entry.available,
+          hasEffort,
+          tiers: Array.from(entry.tiers),
+          elemEn: elem.en,
+          elemZh: elem.zh,
+          isOther: false,
+          rawOptions: entry.rawOptions
+        });
       } else {
-        other.push(m);
+        otherMap.set(base, {
+          label: base,
+          rawLabel: base,
+          available: entry.available,
+          hasEffort,
+          tiers: Array.from(entry.tiers),
+          isOther: true,
+          rawOptions: entry.rawOptions
+        });
       }
     });
 
-    otherModelsList = other;
+    // 目录补全：补充 CATALOG_ELEMENT_MODELS 中尚未在 liveOptions 中出现的已知 Gemini 4 元素模型
+    CATALOG_ELEMENT_MODELS.forEach(cat => {
+      const elem = ALL_ELEMENTS.find(e => e.en.toLowerCase() === cat.elemEn.toLowerCase() || e.zh === cat.elemZh);
+      if (elem && !discoveredElemModels.has(elem.z)) {
+        const cur = getCurrentActiveModel();
+        const isCurrentActive = cur.toLowerCase().includes(cat.elemEn.toLowerCase()) || cur.includes(cat.elemZh);
+
+        discoveredElemModels.set(elem.z, {
+          label: cat.label,
+          rawLabel: cat.label,
+          available: isCurrentActive ? true : false,
+          hasEffort: cat.hasEffort || false,
+          elemEn: cat.elemEn,
+          elemZh: cat.elemZh,
+          isOther: false,
+          rawOptions: []
+        });
+      }
+    });
+
+    // 兜底“其他模型”（防止冷启动未加载 fiber）
+    if (otherMap.size === 0) {
+      const DEFAULT_OTHER = [
+        { label: 'Gemini 3.8 Flash', available: true, isOther: true, hasEffort: true },
+        { label: 'Claude Sonnet 4.6 (Thinking)', available: true, isOther: true },
+        { label: 'Claude Opus 4.6 (Thinking)', available: true, isOther: true },
+        { label: 'GPT-OSS 120B (Medium)', available: true, isOther: true }
+      ];
+      DEFAULT_OTHER.forEach(m => otherMap.set(m.label, m));
+    }
+
+    matchedElementsMap = discoveredElemModels;
+    otherModelsList = Array.from(otherMap.values());
   }
 
   // 模拟完整指针与点击事件（完美适配 React / Radix 内部事件监听）
@@ -235,8 +376,32 @@
     el.click();
   }
 
-  // 静默执行模型切换（彻底屏蔽原生菜单弹出）
+  // 静默执行模型切换（彻底屏蔽原生菜单弹出，优先原生 React 状态切换）
   window.__selectRealModel = async function (targetLabel) {
+    const live = getLiveModelInfo();
+    if (live && live.setSelectedModel && live.modelOptions) {
+      const targetNorm = targetLabel.toLowerCase();
+      const options = Array.from(live.modelOptions);
+      const match = options.find(opt => (opt.label || '').toLowerCase() === targetNorm) ||
+                    options.find(opt => {
+                      const l = (opt.label || '').toLowerCase();
+                      return l.includes(targetNorm) || targetNorm.includes(l);
+                    });
+
+      if (match) {
+        if (match.disabled) {
+          showToast(`🔒 当前账号暂无 [${targetLabel}] 使用权限`, 'warning');
+          return false;
+        }
+        live.setSelectedModel(match);
+        currentModelName = match.label;
+        updateTriggerButton();
+        showToast(`⚡ 已成功切换模型至：${match.label}`, 'success');
+        closeModal();
+        return true;
+      }
+    }
+
     const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
     if (!nativeTrigger) {
       showToast('❌ 未找到模型选择器', 'error');
@@ -304,8 +469,39 @@
     return success;
   };
 
-  // 带有思考能级（Low / Medium / High）的模型切换
+  // 带有思考能级（Low / Medium / High）的模型切换（优先原生 React 状态切换）
   window.__selectModelWithEffort = async function (modelBase, effortTier) {
+    const live = getLiveModelInfo();
+    if (live && live.setSelectedModel && live.modelOptions) {
+      const baseNorm = modelBase.toLowerCase();
+      const tierNorm = effortTier.toLowerCase();
+      const options = Array.from(live.modelOptions);
+
+      const match = options.find(opt => {
+        const l = (opt.label || '').toLowerCase();
+        const hasBase = l.includes(baseNorm) || (baseNorm.includes('hydrogen') && l.includes('hydrogen')) || (baseNorm.includes('flash') && l.includes('flash'));
+        const hasTier = l.includes(`(${tierNorm})`) || l.includes(` ${tierNorm}`) || (tierNorm === 'high' && (l.includes('(xhigh)') || l.includes('extra high')));
+        return hasBase && hasTier;
+      }) || options.find(opt => {
+        const l = (opt.label || '').toLowerCase();
+        return l.includes(baseNorm);
+      });
+
+      if (match) {
+        if (match.disabled) {
+          showToast(`🔒 当前账号暂无 [${modelBase}] 使用权限`, 'warning');
+          return false;
+        }
+        live.setSelectedModel(match);
+        currentModelName = match.label;
+        updateTriggerButton();
+        showToast(`⚡ 已成功切换模型至：${match.label}`, 'success');
+        hideEffortPopover();
+        closeModal();
+        return true;
+      }
+    }
+
     const nativeTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
     if (!nativeTrigger) {
       showToast('❌ 未找到模型选择器', 'error');
@@ -1856,6 +2052,7 @@
       overlay = document.getElementById('agy-periodic-modal-overlay');
     }
     getCurrentActiveModel();
+    initModelMappings();
     renderAll();
 
     // 其他可用模型默认始终保持折叠收起状态，点击标题栏时才展开
@@ -1899,21 +2096,27 @@
       renderAll();
       if (window.__setOtherModelsExpanded) window.__setOtherModelsExpanded(false);
 
-      // 1. MutationObserver 监听 DOM 树变化
+      // 1. MutationObserver 监听 DOM 树变化（防抖且不监听 characterData，彻底根除打字掉帧）
+      let scheduled = false;
       const observer = new MutationObserver(() => {
-        const { nativeTrigger, mountParent } = getComposerContainer();
-        const btn = document.getElementById('agy-custom-model-trigger');
-        if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
-          updateTriggerButton();
-        } else if (nativeTrigger) {
-          const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
-          if (t && t !== currentModelName) {
-            currentModelName = t;
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          const { nativeTrigger, mountParent } = getComposerContainer();
+          const btn = document.getElementById('agy-custom-model-trigger');
+          if (nativeTrigger && (!btn || (mountParent && !mountParent.contains(btn)))) {
             updateTriggerButton();
+          } else if (nativeTrigger) {
+            const t = (nativeTrigger.innerText || nativeTrigger.textContent || '').trim();
+            if (t && t !== currentModelName) {
+              currentModelName = t;
+              updateTriggerButton();
+            }
           }
-        }
+        });
       });
-      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      observer.observe(document.body, { childList: true, subtree: true });
       window.__agyElementsObserver = observer;
 
       // 2. 定时心跳自愈兜底（每 1200ms 检测一次，防任何未被 MutationObserver 捕获的 React 虚拟 DOM 刷新）
@@ -1936,7 +2139,15 @@
       window.__ACTINIDES = ACTINIDES;
       window.__openElementsModal = openModal;
       window.__closeElementsModal = closeModal;
-      console.log('[GeminiElements] Pure Clean Periodic Selector Initialized.');
+      window.__agyElementsCleanup = () => {
+        try { if (window.__agyElementsObserver) window.__agyElementsObserver.disconnect(); } catch (_) {}
+        try { if (window.__agyElementsHeartbeat) clearInterval(window.__agyElementsHeartbeat); } catch (_) {}
+        try { document.getElementById('agy-periodic-modal-overlay')?.remove(); } catch (_) {}
+        try { document.getElementById('agy-effort-popover')?.remove(); } catch (_) {}
+        try { document.getElementById('agy-custom-model-trigger')?.remove(); } catch (_) {}
+      };
+      window.__agyElementsVer = UI_VERSION;
+      console.log(`[GeminiElements] Pure Clean Periodic Selector Initialized (v${UI_VERSION}).`);
     }
 
     // 等待系统与 DOM 彻底加载就绪（针对系统冷启动与重启场景）

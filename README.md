@@ -15,13 +15,14 @@
    - **Interactive Main-Table Anchoring**: Clicking `57-71 La*` (Period 6, Group 3) or `89-103 Ac* ☢` (Period 7, Group 3) smoothly scrolls and highlights the corresponding f-block series row.
    - Clean, luminous Light-Tech design with adaptive widescreen HUD view.
 
-2. **Gemini 4 Element Name Mapping**
-   - Automatically maps Antigravity API models to their corresponding chemical elements:
+2. **Dynamic Model Probing & Element Mapping**
+   - Automatically probes live model options directly from Antigravity's host state and maps element-named models to their exact periodic table cells:
+     - `Gemini 4 Hydrogen` ➔ **[1 H 氢]** (Dynamically detected and available with Effort tiers)
      - `Gemini 4 Neon` ➔ **[10 Ne 氖]**
      - `Gemini 4 Carbon` ➔ **[6 C 碳]**
      - `Gemini 4 Argon` ➔ **[18 Ar 氩]**
-     - `Gemini 4 Hydrogen` ➔ **[1 H 氢]**
-   - **Glow & State Indicators**: Available models glow with a cyan pulse and an `[Available]` badge; unauthorized models show `[🔒 No Permission]`; unreleased elements show `[Unreleased]`.
+     - Future element models released by Google are dynamically matched across all 118 elements without static locks!
+   - **Glow & State Indicators**: Available models glow with a cyan pulse and an `[Available]` badge; account models without permission show `[🔒 No Permission]`; unreleased elements show `[Unreleased]`.
 
 3. **Integrated Capsule Pill Slider Bar (Low - Medium - High)**
    - Built for models with reasoning effort tiers (such as `Gemini 3.8 Flash`).

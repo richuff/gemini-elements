@@ -152,14 +152,15 @@ class PageSession {
             const customBtn = document.getElementById('agy-custom-model-trigger');
             const overlay = document.getElementById('agy-periodic-modal-overlay');
             const observer = !!window.__agyElementsObserver;
+            const isLatestVer = window.__agyElementsVer === '20261125-v2';
 
             // 1. 系统尚未加载完成（等待 React 挂载 composer 和原生模型按钮）
             if (!ready || !nativeTrigger) {
               return 'waiting_system_ready';
             }
 
-            // 2. 系统加载完毕，但元素周期表按钮或模态框丢失（冷启动完成、页面切换、组件刷新）
-            if (!customBtn || !overlay || !observer) {
+            // 2. 系统加载完毕，但元素周期表按钮或模态框丢失或版本过期（冷启动完成、页面切换、组件刷新）
+            if (!customBtn || !overlay || !observer || !isLatestVer) {
               return 'needs_injection';
             }
 
