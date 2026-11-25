@@ -10,7 +10,7 @@
  */
 
 (function () {
-  const UI_VERSION = '20261125-v2';
+  const UI_VERSION = '20261125-v3';
   if (window.__agyElementsCleanup) {
     try { window.__agyElementsCleanup(); } catch (e) {}
   }
@@ -469,19 +469,29 @@
     return success;
   };
 
-  // 带有思考能级（Low / Medium / High）的模型切换（优先原生 React 状态切换）
+  function matchesTier(label, tierKey) {
+    const l = (label || '').toLowerCase();
+    const t = tierKey.toLowerCase();
+    if (t === 'xhigh' || t === 'extra high') {
+      return /\(xhigh\)|\bxhigh\b|extra\s*high/i.test(l);
+    }
+    if (t === 'high') {
+      return (/\(high\)/i.test(l) || /\bhigh\b/i.test(l)) && !/xhigh|extra\s*high/i.test(l);
+    }
+    return new RegExp(`\\(${t}\\)|\\b${t}\\b`, 'i').test(l);
+  }
+
+  // 带有思考能级（动态支持 Low / Medium / High / XHigh）的模型切换（优先原生 React 状态切换）
   window.__selectModelWithEffort = async function (modelBase, effortTier) {
     const live = getLiveModelInfo();
     if (live && live.setSelectedModel && live.modelOptions) {
       const baseNorm = modelBase.toLowerCase();
-      const tierNorm = effortTier.toLowerCase();
       const options = Array.from(live.modelOptions);
 
       const match = options.find(opt => {
         const l = (opt.label || '').toLowerCase();
         const hasBase = l.includes(baseNorm) || (baseNorm.includes('hydrogen') && l.includes('hydrogen')) || (baseNorm.includes('flash') && l.includes('flash'));
-        const hasTier = l.includes(`(${tierNorm})`) || l.includes(` ${tierNorm}`) || (tierNorm === 'high' && (l.includes('(xhigh)') || l.includes('extra high')));
-        return hasBase && hasTier;
+        return hasBase && matchesTier(l, effortTier);
       }) || options.find(opt => {
         const l = (opt.label || '').toLowerCase();
         return l.includes(baseNorm);
@@ -555,29 +565,89 @@
     return success;
   };
 
-  // 方案一升级版：参考图片2布局与高质感胶囊滑轨 (Low - Medium - High)
-  const TIERS = [
-    { key: 'low', name: 'Low', zh: '低', icon: '⚪', pct: 0, color: '#64748b', fillColor: '#64748b' },
-    { key: 'medium', name: 'Medium', zh: '中', icon: '🟢', pct: 50, color: '#0284c7', fillColor: '#0284c7' },
-    { key: 'high', name: 'High', zh: '高', icon: '⚡', pct: 100, color: '#2563eb', fillColor: '#2563eb' }
-  ];
+  // 动态能级元数据目录（支持 Low / Medium / High / Extra High 等任意动态发现档位）
+  const TIER_CATALOG = {
+    low:    { key: 'low',    name: 'Low',        zh: '低',   order: 1, color: '#64748b', fillColor: '#64748b' },
+    medium: { key: 'medium', name: 'Medium',     zh: '中',   order: 2, color: '#0284c7', fillColor: '#0284c7' },
+    high:   { key: 'high',   name: 'High',       zh: '高',   order: 3, color: '#2563eb', fillColor: '#2563eb' },
+    xhigh:  { key: 'xhigh',  name: 'Extra High', zh: '极高', order: 4, color: '#7c3aed', fillColor: '#7c3aed' }
+  };
+
+  function getModelTiers(modelName) {
+    let foundModel = null;
+    for (const m of matchedElementsMap.values()) {
+      if (m.label === modelName) { foundModel = m; break; }
+    }
+    if (!foundModel) {
+      foundModel = otherModelsList.find(m => m.label === modelName);
+    }
+
+    const rawTiers = [];
+    if (foundModel && Array.isArray(foundModel.tiers) && foundModel.tiers.length > 0) {
+      foundModel.tiers.forEach(t => {
+        const norm = t.toLowerCase().replace(/\s+/g, '');
+        const key = (norm === 'extrahigh' || norm === 'xhigh') ? 'xhigh' : norm;
+        if (TIER_CATALOG[key]) {
+          rawTiers.push({ ...TIER_CATALOG[key], rawTier: t });
+        } else {
+          rawTiers.push({ key, name: t, zh: t, order: 10, color: '#2563eb', fillColor: '#2563eb', rawTier: t });
+        }
+      });
+    }
+
+    const unique = [];
+    const seen = new Set();
+    rawTiers.sort((a, b) => a.order - b.order).forEach(t => {
+      if (!seen.has(t.key)) {
+        seen.add(t.key);
+        unique.push(t);
+      }
+    });
+
+    if (unique.length === 0) {
+      return [
+        { ...TIER_CATALOG.low },
+        { ...TIER_CATALOG.medium },
+        { ...TIER_CATALOG.high }
+      ];
+    }
+    return unique;
+  }
 
   let currentEffortModel = '';
+  let currentActiveTiers = [];
   let currentTierIdx = 1;
 
-  // 创建激发态思考能级滑块气泡（大体参考图片2，保留Antigravity高科技亮色质感）
-  function createEffortPopover() {
+  // 创建激发态思考能级滑块气泡（动态适配不同模型的档位数：3 档或 4 档 Extra High）
+  function createEffortPopover(tiers) {
     let popover = document.getElementById('agy-effort-popover');
     if (popover) {
       popover.remove();
     }
+
+    currentActiveTiers = tiers && tiers.length > 0 ? tiers : [
+      { ...TIER_CATALOG.low },
+      { ...TIER_CATALOG.medium },
+      { ...TIER_CATALOG.high }
+    ];
+    const count = currentActiveTiers.length;
+
+    const dotsHtml = currentActiveTiers.map((_, i) => {
+      const f = count > 1 ? i / (count - 1) : 0;
+      return `<div class="agy-pill-dot" data-tier="${i}" style="left: calc(14px + (100% - 28px) * ${f});"></div>`;
+    }).join('');
+
+    const ticksHtml = currentActiveTiers.map((t, i) => {
+      const f = count > 1 ? i / (count - 1) : 0;
+      return `<span class="pill-tick-label" data-tier="${i}" style="left: calc(14px + (100% - 28px) * ${f});">${t.zh}</span>`;
+    }).join('');
 
     popover = document.createElement('div');
     popover.id = 'agy-effort-popover';
     popover.className = 'agy-effort-popover';
     popover.style.display = 'none';
     popover.innerHTML = `
-      <!-- 顶栏：大体参考图片2（左闪电、中当前档位与模型名、右关闭） -->
+      <!-- 顶栏：左闪电、中当前档位与模型名、右关闭 -->
       <div class="agy-popover-top-row">
         <div class="agy-popover-icon-col">
           <svg class="agy-popover-bolt" id="agy-popover-bolt" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -594,22 +664,15 @@
         <button class="agy-popover-close" id="agy-effort-close" title="关闭">✕</button>
       </div>
 
-      <!-- 图片2 风格：一体化宽胶囊滑轨 (Pill Slider Bar) -->
+      <!-- 一体化宽胶囊滑轨 (Pill Slider Bar) -->
       <div class="agy-pill-slider-container">
         <div class="agy-pill-track" id="agy-tier-track-base">
           <div class="agy-pill-fill" id="agy-tier-track-fill"></div>
-          <!-- 档位刻度内嵌圆点 -->
-          <div class="agy-pill-dot dot-0" data-tier="0"></div>
-          <div class="agy-pill-dot dot-1" data-tier="1"></div>
-          <div class="agy-pill-dot dot-2" data-tier="2"></div>
-          <!-- 悬浮圆球 Thumb -->
+          ${dotsHtml}
           <div class="agy-pill-thumb" id="agy-tier-thumb" tabindex="0" role="slider"></div>
         </div>
-        <!-- 底部极简刻度标签 -->
         <div class="agy-pill-ticks">
-          <span class="pill-tick-label label-0" data-tier="0">低</span>
-          <span class="pill-tick-label label-1" data-tier="1">中</span>
-          <span class="pill-tick-label label-2" data-tier="2">高</span>
+          ${ticksHtml}
         </div>
       </div>
     `;
@@ -631,46 +694,41 @@
     const boltIcon = document.getElementById('agy-popover-bolt');
 
     let isDragging = false;
-    let dragPointerId = null;
 
     function applyTierUI(idx) {
-      currentTierIdx = idx;
-      const tier = TIERS[idx];
-      tierTitle.textContent = tier.zh;
+      const safeIdx = Math.max(0, Math.min(count - 1, idx));
+      currentTierIdx = safeIdx;
+      const tier = currentActiveTiers[safeIdx];
+      tierTitle.textContent = tier.key === 'xhigh' ? '极高 (Extra High)' : tier.zh;
       tierTitle.style.color = tier.color;
       boltIcon.style.color = tier.color;
       trackFill.style.background = tier.fillColor;
 
-      if (idx === 0) {
-        thumb.style.left = '14px';
-        trackFill.style.width = '28px';
-      } else if (idx === 1) {
-        thumb.style.left = '50%';
-        trackFill.style.width = '50%';
-      } else {
-        thumb.style.left = 'calc(100% - 14px)';
-        trackFill.style.width = '100%';
-      }
+      const f = count > 1 ? safeIdx / (count - 1) : 0;
+      thumb.style.left = `calc(14px + (100% - 28px) * ${f})`;
+      trackFill.style.width = `calc(28px + (100% - 28px) * ${f})`;
 
       popover.querySelectorAll('.agy-pill-dot').forEach((dot) => {
         const dIdx = parseInt(dot.getAttribute('data-tier'), 10);
-        dot.classList.toggle('is-active-fill', idx >= dIdx);
+        dot.classList.toggle('is-active-fill', safeIdx >= dIdx);
       });
 
       popover.querySelectorAll('.pill-tick-label').forEach((label) => {
         const lIdx = parseInt(label.getAttribute('data-tier'), 10);
-        label.classList.toggle('is-active', idx === lIdx);
+        label.classList.toggle('is-active', safeIdx === lIdx);
+        label.style.color = safeIdx === lIdx ? tier.color : '';
       });
     }
 
     function snapToTier(targetIdx, triggerChange = true) {
+      const safeIdx = Math.max(0, Math.min(count - 1, targetIdx));
       thumb.style.transition = 'left 0.28s cubic-bezier(0.34, 1.56, 0.64, 1)';
       trackFill.style.transition = 'width 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease';
-      applyTierUI(targetIdx);
+      applyTierUI(safeIdx);
 
       if (triggerChange && currentEffortModel) {
         setTimeout(() => {
-          window.__selectModelWithEffort(currentEffortModel, TIERS[targetIdx].key);
+          window.__selectModelWithEffort(currentEffortModel, currentActiveTiers[safeIdx].key);
         }, 180);
       }
     }
@@ -690,7 +748,6 @@
     function onPointerDown(e) {
       e.stopPropagation();
       isDragging = true;
-      dragPointerId = e.pointerId;
       try {
         thumb.setPointerCapture(e.pointerId);
       } catch (_) {}
@@ -705,18 +762,14 @@
       const rect = trackBase.getBoundingClientRect();
       const rawX = e.clientX - rect.left - 14;
       const available = rect.width - 28;
-      const rawPct = Math.max(0, Math.min(100, (rawX / available) * 100));
+      const ratio = Math.max(0, Math.min(1, rawX / available));
 
-      thumb.style.left = `calc(14px + (100% - 28px) * ${rawPct / 100})`;
-      trackFill.style.width = `calc(14px + (100% - 28px) * ${rawPct / 100})`;
+      thumb.style.left = `calc(14px + (100% - 28px) * ${ratio})`;
+      trackFill.style.width = `calc(28px + (100% - 28px) * ${ratio})`;
 
-      let previewIdx = 0;
-      if (rawPct >= 85) previewIdx = 2;
-      else if (rawPct >= 38) previewIdx = 1;
-      else previewIdx = 0;
-
-      const pTier = TIERS[previewIdx];
-      tierTitle.textContent = pTier.zh;
+      const previewIdx = count > 1 ? Math.round(ratio * (count - 1)) : 0;
+      const pTier = currentActiveTiers[previewIdx];
+      tierTitle.textContent = pTier.key === 'xhigh' ? '极高 (Extra High)' : pTier.zh;
       tierTitle.style.color = pTier.color;
       boltIcon.style.color = pTier.color;
       trackFill.style.background = pTier.fillColor;
@@ -728,6 +781,7 @@
       popover.querySelectorAll('.pill-tick-label').forEach((label) => {
         const lIdx = parseInt(label.getAttribute('data-tier'), 10);
         label.classList.toggle('is-active', previewIdx === lIdx);
+        label.style.color = previewIdx === lIdx ? pTier.color : '';
       });
     }
 
@@ -742,17 +796,8 @@
       const rect = trackBase.getBoundingClientRect();
       const rawX = e.clientX - rect.left - 14;
       const available = rect.width - 28;
-      const rawPct = Math.max(0, Math.min(100, (rawX / available) * 100));
-
-      // 松开自动匹配档位规则（未完全达标则自动回弹至下级档位）：
-      // 0% ~ 45% -> 匹配到 低 (0)
-      // 45% ~ 88% -> 匹配到 中 (1)
-      // >= 88% -> 匹配到 高 (2)
-      let snapIdx = 0;
-      if (rawPct >= 88) snapIdx = 2;
-      else if (rawPct >= 45) snapIdx = 1;
-      else snapIdx = 0;
-
+      const ratio = Math.max(0, Math.min(1, rawX / available));
+      const snapIdx = count > 1 ? Math.round(ratio * (count - 1)) : 0;
       snapToTier(snapIdx, true);
     }
 
@@ -768,11 +813,8 @@
       const rect = trackBase.getBoundingClientRect();
       const rawX = e.clientX - rect.left - 14;
       const available = rect.width - 28;
-      const clickPct = Math.max(0, Math.min(100, (rawX / available) * 100));
-      let clickIdx = 0;
-      if (clickPct >= 75) clickIdx = 2;
-      else if (clickPct >= 25) clickIdx = 1;
-      else clickIdx = 0;
+      const ratio = Math.max(0, Math.min(1, rawX / available));
+      const clickIdx = count > 1 ? Math.round(ratio * (count - 1)) : 0;
       snapToTier(clickIdx, true);
     });
 
@@ -780,7 +822,8 @@
   }
 
   function showEffortPopover(anchorEl, modelName) {
-    const popover = createEffortPopover();
+    const tiers = getModelTiers(modelName);
+    const popover = createEffortPopover(tiers);
     currentEffortModel = modelName;
     document.getElementById('agy-effort-model-title').textContent = modelName;
 
@@ -801,11 +844,26 @@
     popover.classList.toggle('is-below', isBelow);
     popover.style.display = 'flex';
 
+    let initialTierIdx = tiers.findIndex(t => t.key === 'medium');
+    if (initialTierIdx < 0) initialTierIdx = 0;
+
+    const normModel = modelName.toLowerCase();
     const normCurrent = currentModelName.toLowerCase();
-    let initialTierIdx = 1; // 默认 medium
-    if (normCurrent.includes('low') || normCurrent.includes('低')) initialTierIdx = 0;
-    else if (normCurrent.includes('high') || normCurrent.includes('高')) initialTierIdx = 2;
-    else initialTierIdx = 1;
+    if (normCurrent.includes(normModel)) {
+      if (/xhigh|extra\s*high|极高|超高/i.test(normCurrent)) {
+        const idx = tiers.findIndex(t => t.key === 'xhigh');
+        if (idx >= 0) initialTierIdx = idx;
+      } else if (/\bhigh\b|高/i.test(normCurrent)) {
+        const idx = tiers.findIndex(t => t.key === 'high');
+        if (idx >= 0) initialTierIdx = idx;
+      } else if (/\blow\b|低/i.test(normCurrent)) {
+        const idx = tiers.findIndex(t => t.key === 'low');
+        if (idx >= 0) initialTierIdx = idx;
+      } else if (/\bmedium\b|中/i.test(normCurrent)) {
+        const idx = tiers.findIndex(t => t.key === 'medium');
+        if (idx >= 0) initialTierIdx = idx;
+      }
+    }
 
     if (popover.__snapToTier) {
       popover.__snapToTier(initialTierIdx, false);
@@ -1626,17 +1684,21 @@
       }
       /* 底部刻度文字行 */
       .agy-pill-ticks {
-        display: flex;
-        justify-content: space-between;
-        padding: 0 8px;
+        position: relative;
+        height: 18px;
+        width: 100%;
       }
       .pill-tick-label {
+        position: absolute;
+        top: 0;
+        transform: translateX(-50%);
         font-size: 11.5px;
         font-weight: 600;
         color: #94a3b8;
         cursor: pointer;
         transition: all 0.15s ease;
         user-select: none;
+        white-space: nowrap;
       }
       .pill-tick-label:hover {
         color: #2563eb;

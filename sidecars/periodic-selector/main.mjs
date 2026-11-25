@@ -152,7 +152,7 @@ class PageSession {
             const customBtn = document.getElementById('agy-custom-model-trigger');
             const overlay = document.getElementById('agy-periodic-modal-overlay');
             const observer = !!window.__agyElementsObserver;
-            const isLatestVer = window.__agyElementsVer === '20261125-v2';
+            const isLatestVer = window.__agyElementsVer === '20261125-v3';
 
             // 1. 系统尚未加载完成（等待 React 挂载 composer 和原生模型按钮）
             if (!ready || !nativeTrigger) {
